@@ -1,4 +1,4 @@
-import { YoutubeTranscript } from 'youtube-transcript';
+import { Innertube } from 'youtubei.js';
 
 /**
  * Extract video ID from YouTube URL
@@ -24,7 +24,7 @@ function extractVideoId(url) {
 }
 
 /**
- * Fetch transcript for a YouTube video with retry logic
+ * Fetch transcript using YouTube Internal API (more reliable)
  */
 export async function getTranscript(videoIdOrUrl, retries = 2) {
   try {
@@ -36,63 +36,75 @@ export async function getTranscript(videoIdOrUrl, retries = 2) {
 
     console.log(`Fetching transcript for video: ${videoId}`);
 
-    // Try fetching transcript with multiple language preferences
-    let transcriptData;
-    try {
-      // Try default (usually auto-generated or user's language)
-      transcriptData = await YoutubeTranscript.fetchTranscript(videoId, {
-        lang: 'en'
-      });
-    } catch (langError) {
-      console.log('English transcript not found, trying without language preference...');
-      // If English fails, try without language specification
-      transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
-    }
+    // Initialize YouTube Internal API
+    const youtube = await Innertube.create();
 
-    if (!transcriptData || transcriptData.length === 0) {
+    // Get video info
+    const info = await youtube.getInfo(videoId);
+
+    // Get transcript/captions
+    const transcriptData = await info.getTranscript();
+
+    if (!transcriptData || !transcriptData.transcript) {
       throw new Error('No transcript available for this video');
     }
 
-    console.log(`Transcript fetched successfully: ${transcriptData.length} segments`);
+    const segments = transcriptData.transcript.content.body.initial_segments;
+
+    if (!segments || segments.length === 0) {
+      throw new Error('No transcript segments found');
+    }
+
+    console.log(`Transcript fetched successfully: ${segments.length} segments`);
 
     // Format transcript with timestamps
-    const formattedTranscript = transcriptData.map(item => ({
-      timestamp: formatTimestamp(item.offset),
-      seconds: Math.floor(item.offset / 1000),
-      text: item.text
-    }));
+    const formattedTranscript = segments.map(segment => {
+      const startMs = segment.start_ms;
+      const text = segment.snippet.text;
+
+      return {
+        timestamp: formatTimestamp(startMs),
+        seconds: Math.floor(startMs / 1000),
+        text: text
+      };
+    });
 
     // Also provide full text
-    const fullText = transcriptData.map(item => item.text).join(' ');
+    const fullText = segments.map(s => s.snippet.text).join(' ');
 
     return {
       videoId,
       transcript: formattedTranscript,
       fullText,
-      duration: transcriptData[transcriptData.length - 1]?.offset || 0
+      duration: segments[segments.length - 1]?.start_ms || 0
     };
 
   } catch (error) {
     console.error('Transcript error:', error);
 
     // Retry logic for transient failures
-    if (retries > 0 && !error.message.includes('Transcript is disabled')) {
+    if (retries > 0 &&
+        !error.message.includes('No transcript available') &&
+        !error.message.includes('Transcript is disabled')) {
       console.log(`Retrying... (${retries} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return getTranscript(videoIdOrUrl, retries - 1);
     }
 
     // Better error messages
-    if (error.message.includes('Could not find captions') ||
-        error.message.includes('Transcript is disabled')) {
+    if (error.message.includes('No transcript') ||
+        error.message.includes('Transcript is disabled') ||
+        error.message.includes('captions')) {
       throw new Error('No transcript/captions available for this video. The video may not have captions enabled.');
     }
 
-    if (error.message.includes('Video unavailable')) {
+    if (error.message.includes('Video unavailable') ||
+        error.message.includes('not available')) {
       throw new Error('Video is unavailable, private, or deleted');
     }
 
-    if (error.message.includes('Too Many Requests')) {
+    if (error.message.includes('Too Many Requests') ||
+        error.message.includes('rate limit')) {
       throw new Error('Rate limit exceeded. Please try again in a few moments.');
     }
 

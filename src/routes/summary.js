@@ -1,5 +1,6 @@
 import express from 'express';
-import { getTranscript } from '../services/transcriptService.js';
+import { getTranscript as getTranscriptV1 } from '../services/transcriptService.js';
+import { getTranscript as getTranscriptV2 } from '../services/transcriptServiceV2.js';
 import { streamSummary, parseSSEStream } from '../services/openRouterService.js';
 import { SUMMARY_PRESETS, PRESET_CATEGORIES } from '../config/summaryPresets.js';
 import { getSelectedModel } from '../config/adminConfig.js';
@@ -54,21 +55,31 @@ router.post('/generate', async (req, res, next) => {
       });
     }
 
-    // Fetch transcript
+    // Fetch transcript with fallback
     let transcriptData;
     try {
-      transcriptData = await getTranscript(videoId);
+      console.log('Attempting transcript fetch with youtube-transcript package...');
+      transcriptData = await getTranscriptV1(videoId);
     } catch (error) {
-      if (error.message.includes('No transcript available')) {
-        return res.status(404).json({
-          error: {
-            message: 'No transcript available for this video',
-            status: 404,
-            type: 'NO_TRANSCRIPT'
-          }
-        });
+      console.log('Primary method failed, trying fallback...', error.message);
+
+      try {
+        console.log('Attempting transcript fetch with youtubei.js...');
+        transcriptData = await getTranscriptV2(videoId);
+      } catch (fallbackError) {
+        console.error('Both transcript methods failed:', fallbackError);
+
+        if (error.message.includes('No transcript') || error.message.includes('captions')) {
+          return res.status(404).json({
+            error: {
+              message: 'No transcript/captions available for this video. Please try a video with captions enabled.',
+              status: 404,
+              type: 'NO_TRANSCRIPT'
+            }
+          });
+        }
+        throw error;
       }
-      throw error;
     }
 
     // Set up SSE headers
