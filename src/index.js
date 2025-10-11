@@ -17,9 +17,28 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+// CORS configuration for Chrome extension and web access
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['https://www.youtube.com', 'https://youtube.com'];
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Allow if in allowed list or is a chrome-extension
+    if (allowedOrigins.includes('*') ||
+        allowedOrigins.includes(origin) ||
+        origin.startsWith('chrome-extension://')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all for now (can be restricted later)
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
