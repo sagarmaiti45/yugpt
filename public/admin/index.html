@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YuGPT Admin Panel - Model Selection</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .login-card,
+    .admin-panel {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      padding: 40px;
+    }
+
+    .login-card {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .login-card h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      background: #fee;
+      color: #c53030;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      border-left: 4px solid #f56565;
+    }
+
+    .success-message {
+      background: #e6ffed;
+      color: #22543d;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      border-left: 4px solid #48bb78;
+    }
+
+    .admin-panel {
+      display: none;
+    }
+
+    .admin-panel.active {
+      display: block;
+    }
+
+    .current-model {
+      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+      padding: 20px;
+      border-radius: 12px;
+      border-left: 4px solid #667eea;
+      margin-bottom: 32px;
+    }
+
+    .current-model h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .current-model-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .current-model-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .current-model-badge {
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .model-section {
+      margin-bottom: 32px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .section-icon.premium {
+      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    }
+
+    .section-icon.optimized {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+
+    .section-icon.free {
+      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    }
+
+    .section-icon.custom {
+      background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: #718096;
+    }
+
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .model-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .model-card:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+
+    .model-card.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    }
+
+    .model-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .model-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .model-provider {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 8px;
+    }
+
+    .model-description {
+      font-size: 13px;
+      color: #4a5568;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .model-specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .spec-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .spec-badge.context {
+      background: #e6fffa;
+      color: #234e52;
+    }
+
+    .spec-badge.pricing {
+      background: #fef5e7;
+      color: #744210;
+    }
+
+    .spec-badge.free {
+      background: #e6ffed;
+      color: #22543d;
+    }
+
+    .select-btn {
+      width: 100%;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .select-btn:hover {
+      opacity: 0.9;
+    }
+
+    .select-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .selected-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #48bb78;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .custom-model-form {
+      background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+      border: 2px solid #e9d8fd;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .custom-model-form h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #553c9a;
+      margin-bottom: 12px;
+    }
+
+    .custom-model-form p {
+      font-size: 13px;
+      color: #6b46c1;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .custom-input-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .custom-input-group input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #d6bcfa;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .custom-input-group input:focus {
+      outline: none;
+      border-color: #9f7aea;
+    }
+
+    .custom-input-group button {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .custom-input-group button:hover {
+      opacity: 0.9;
+    }
+
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #718096;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .models-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 28px;
+      }
+
+      .logout-btn {
+        position: static;
+        margin: 0 auto 20px;
+        display: block;
+        width: fit-content;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>
+        <span class="header-icon">🤖</span>
+        YuGPT Admin Panel
+      </h1>
+      <p>Manage AI model selection for all users</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card" id="loginCard">
+      <h2>🔐 Admin Login</h2>
+      <div id="loginError"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="password">Admin Password</label>
+          <input type="password" id="password" placeholder="Enter admin password" required>
+        </div>
+        <button type="submit" class="btn">Login</button>
+      </form>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel">
+      <button class="logout-btn" onclick="logout()">Logout</button>
+
+      <div id="message"></div>
+
+      <!-- Current Model Display -->
+      <div class="current-model">
+        <h3>Currently Active Model</h3>
+        <div class="current-model-info">
+          <div class="current-model-name" id="currentModelName">Loading...</div>
+          <div class="current-model-badge">ACTIVE</div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading models...</p>
+      </div>
+
+      <!-- Models Container -->
+      <div id="modelsContainer" style="display: none;">
+        <!-- Premium Models -->
+        <div class="model-section">
+          <div class="section-header">
+            <div class="section-icon premium">⭐</div>
+            <div>
+              <div class="section-title">Premium Models</div>
+              <div class="section-subtitle">Best quality, highest performance</div>
+            </div>
+          </div>
+          <div class="models-grid" id="premiumModels"></div>
+        </div>
+
+        <!-- Optimized Models -->
+        <div class="model-section">
+          <div class="section-header">
+            <div class="section-icon optimized">⚡</div>
+            <div>
+              <div class="section-title">Optimized Models</div>
+              <div class="section-subtitle">Great balance of quality and cost</div>
+            </div>
+          </div>
+          <div class="models-grid" id="optimizedModels"></div>
+        </div>
+
+        <!-- Free Models -->
+        <div class="model-section">
+          <div class="section-header">
+            <div class="section-icon free">🆓</div>
+            <div>
+              <div class="section-title">Free Models</div>
+              <div class="section-subtitle">Perfect for testing and development</div>
+            </div>
+          </div>
+          <div class="models-grid" id="freeModels"></div>
+        </div>
+
+        <!-- Custom Model -->
+        <div class="model-section">
+          <div class="section-header">
+            <div class="section-icon custom">🎨</div>
+            <div>
+              <div class="section-title">Custom Model</div>
+              <div class="section-subtitle">Use any OpenRouter model ID</div>
+            </div>
+          </div>
+          <div class="custom-model-form">
+            <h4>Enter Custom Model ID</h4>
+            <p>Find model IDs at <a href="https://openrouter.ai/models" target="_blank" style="color: #6b46c1; font-weight: 600;">openrouter.ai/models</a></p>
+            <div class="custom-input-group">
+              <input type="text" id="customModelId" placeholder="e.g., provider/model-name" />
+              <button onclick="selectCustomModel()">Use Custom Model</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let authToken = null;
+    let currentModel = null;
+
+    // Check for saved auth token
+    const savedToken = localStorage.getItem('yugpt_admin_token');
+    if (savedToken) {
+      authToken = savedToken;
+      showAdminPanel();
+    }
+
+    // Login form handler
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      authToken = password;
+
+      try {
+        // Test authentication
+        const response = await fetch('/api/admin/settings', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (response.ok) {
+          localStorage.setItem('yugpt_admin_token', authToken);
+          showAdminPanel();
+        } else {
+          showError('loginError', 'Invalid password. Please try again.');
+          authToken = null;
+        }
+      } catch (error) {
+        showError('loginError', 'Failed to connect to server.');
+        authToken = null;
+      }
+    });
+
+    async function showAdminPanel() {
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('adminPanel').classList.add('active');
+      await loadModels();
+    }
+
+    async function loadModels() {
+      try {
+        const response = await fetch('/api/admin/models', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load models');
+
+        const data = await response.json();
+        currentModel = data.data.currentModel;
+
+        // Update current model display
+        document.getElementById('currentModelName').textContent = currentModel;
+
+        // Render models
+        renderModels('premiumModels', data.data.models.premium);
+        renderModels('optimizedModels', data.data.models.optimized);
+        renderModels('freeModels', data.data.models.free);
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('modelsContainer').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error loading models:', error);
+        showMessage('Failed to load models. Please refresh the page.', 'error');
+      }
+    }
+
+    function renderModels(containerId, models) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = models.map(model => `
+        <div class="model-card ${model.id === currentModel ? 'selected' : ''}" data-model-id="${model.id}">
+          ${model.id === currentModel ? '<div class="selected-badge">✓ ACTIVE</div>' : ''}
+          <div class="model-card-header">
+            <div>
+              <div class="model-name">${model.name}</div>
+              <div class="model-provider">${model.provider}</div>
+            </div>
+          </div>
+          <div class="model-description">${model.description}</div>
+          <div class="model-specs">
+            <span class="spec-badge context">📊 ${model.contextLength} tokens</span>
+            <span class="spec-badge ${model.pricing === 'FREE' ? 'free' : 'pricing'}">💰 ${model.pricing}</span>
+          </div>
+          <button class="select-btn" onclick="selectModel('${model.id}')" ${model.id === currentModel ? 'disabled' : ''}>
+            ${model.id === currentModel ? 'Currently Active' : 'Select Model'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function selectModel(modelId) {
+      try {
+        showMessage('Updating model...', 'info');
+
+        const response = await fetch('/api/admin/models/select', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ modelId })
+        });
+
+        if (!response.ok) throw new Error('Failed to select model');
+
+        showMessage('Model updated successfully! All users will now use this model.', 'success');
+
+        // Reload models to update UI
+        setTimeout(() => {
+          document.getElementById('loading').style.display = 'block';
+          document.getElementById('modelsContainer').style.display = 'none';
+          loadModels();
+        }, 1500);
+
+      } catch (error) {
+        console.error('Error selecting model:', error);
+        showMessage('Failed to update model. Please try again.', 'error');
+      }
+    }
+
+    async function selectCustomModel() {
+      const modelId = document.getElementById('customModelId').value.trim();
+
+      if (!modelId) {
+        showMessage('Please enter a model ID', 'error');
+        return;
+      }
+
+      if (!modelId.includes('/')) {
+        showMessage('Invalid format. Model ID should be: provider/model-name', 'error');
+        return;
+      }
+
+      await selectModel(modelId);
+      document.getElementById('customModelId').value = '';
+    }
+
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.innerHTML = `<div class="${type === 'error' ? 'error-message' : 'success-message'}">${message}</div>`;
+
+      setTimeout(() => {
+        messageDiv.innerHTML = '';
+      }, 5000);
+    }
+
+    function showError(elementId, message) {
+      const errorDiv = document.getElementById(elementId);
+      errorDiv.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function logout() {
+      localStorage.removeItem('yugpt_admin_token');
+      authToken = null;
+      document.getElementById('adminPanel').classList.remove('active');
+      document.getElementById('loginCard').style.display = 'block';
+      document.getElementById('password').value = '';
+      document.getElementById('loginError').innerHTML = '';
+    }
+  </script>
+</body>
+</html>
