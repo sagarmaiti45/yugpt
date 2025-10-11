@@ -4,10 +4,16 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 /**
  * Stream summary from OpenRouter API
+ * @param {string} transcript - Video transcript text
+ * @param {object} preset - Summary preset configuration
+ * @param {AbortController} controller - Abort controller for cancellation
+ * @param {string} modelOverride - Optional model override from admin dashboard
  */
-export async function streamSummary(transcript, preset, controller) {
+export async function streamSummary(transcript, preset, controller, modelOverride = null) {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.OPENROUTER_MODEL || 'openai/gpt-4o';
+
+  // Model priority: Admin dashboard > Environment variable > Default fallback
+  const model = modelOverride || process.env.DEFAULT_MODEL || 'openai/gpt-4o';
 
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY not configured');

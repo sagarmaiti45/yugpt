@@ -2,6 +2,7 @@ import express from 'express';
 import { getTranscript } from '../services/transcriptService.js';
 import { streamSummary, parseSSEStream } from '../services/openRouterService.js';
 import { SUMMARY_PRESETS, PRESET_CATEGORIES } from '../config/summaryPresets.js';
+import { getSelectedModel } from '../config/adminConfig.js';
 
 const router = express.Router();
 
@@ -87,8 +88,11 @@ router.post('/generate', async (req, res, next) => {
       videoId: transcriptData.videoId
     })}\n\n`);
 
+    // Get model from admin dashboard configuration
+    const selectedModel = getSelectedModel();
+
     // Stream summary from OpenRouter
-    const stream = await streamSummary(transcriptData.fullText, preset, controller);
+    const stream = await streamSummary(transcriptData.fullText, preset, controller, selectedModel);
 
     for await (const content of parseSSEStream(stream)) {
       res.write(`data: ${JSON.stringify({
