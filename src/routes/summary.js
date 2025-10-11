@@ -30,8 +30,15 @@ router.post('/generate', async (req, res, next) => {
 
   // Handle client disconnect
   req.on('close', () => {
+    console.log('Client disconnected, aborting request');
     controller.abort();
   });
+
+  // Timeout after 5 minutes
+  const timeout = setTimeout(() => {
+    console.log('Request timeout (5 minutes)');
+    controller.abort();
+  }, 5 * 60 * 1000);
 
   try {
     const { videoId, presetId } = req.body;
@@ -117,9 +124,12 @@ router.post('/generate', async (req, res, next) => {
       type: 'done'
     })}\n\n`);
 
+    // Clear timeout
+    clearTimeout(timeout);
     res.end();
 
   } catch (error) {
+    clearTimeout(timeout);
     console.error('Summary generation error:', error);
 
     if (!res.headersSent) {

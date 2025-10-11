@@ -16,8 +16,10 @@ export async function streamSummary(transcript, preset, controller, modelOverrid
   const model = modelOverride || process.env.DEFAULT_MODEL || 'openai/gpt-4o';
 
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY not configured');
+    throw new Error('OPENROUTER_API_KEY not configured. Please set it in Railway environment variables.');
   }
+
+  console.log(`Using AI model: ${model}`);
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {
@@ -48,8 +50,18 @@ export async function streamSummary(transcript, preset, controller, modelOverrid
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || `OpenRouter API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenRouter API error response:', errorText);
+
+      let errorMessage = `OpenRouter API error: ${response.status}`;
+      try {
+        const error = JSON.parse(errorText);
+        errorMessage = error.error?.message || error.message || errorMessage;
+      } catch (e) {
+        // Not JSON, use status text
+      }
+
+      throw new Error(errorMessage);
     }
 
     return response.body;
