@@ -617,7 +617,6 @@
 
         // Render models
         renderModels('premiumModels', data.data.models.paid || []);
-        renderModels('optimizedModels', []); // Empty for now
         renderModels('freeModels', data.data.models.free || []);
 
         document.getElementById('loading').style.display = 'none';
