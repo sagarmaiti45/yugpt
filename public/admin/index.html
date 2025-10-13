@@ -513,28 +513,16 @@
 
       <!-- Models Container -->
       <div id="modelsContainer" style="display: none;">
-        <!-- Premium Models -->
+        <!-- Paid Models -->
         <div class="model-section">
           <div class="section-header">
             <div class="section-icon premium">⭐</div>
             <div>
-              <div class="section-title">Premium Models</div>
-              <div class="section-subtitle">Best quality, highest performance</div>
+              <div class="section-title">Paid Models</div>
+              <div class="section-subtitle">High quality, affordable pricing</div>
             </div>
           </div>
           <div class="models-grid" id="premiumModels"></div>
-        </div>
-
-        <!-- Optimized Models -->
-        <div class="model-section">
-          <div class="section-header">
-            <div class="section-icon optimized">⚡</div>
-            <div>
-              <div class="section-title">Optimized Models</div>
-              <div class="section-subtitle">Great balance of quality and cost</div>
-            </div>
-          </div>
-          <div class="models-grid" id="optimizedModels"></div>
         </div>
 
         <!-- Free Models -->
@@ -628,9 +616,9 @@
         document.getElementById('currentModelName').textContent = currentModel;
 
         // Render models
-        renderModels('premiumModels', data.data.models.premium);
-        renderModels('optimizedModels', data.data.models.optimized);
-        renderModels('freeModels', data.data.models.free);
+        renderModels('premiumModels', data.data.models.paid || []);
+        renderModels('optimizedModels', []); // Empty for now
+        renderModels('freeModels', data.data.models.free || []);
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('modelsContainer').style.display = 'block';
