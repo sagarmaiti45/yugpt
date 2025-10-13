@@ -13,6 +13,87 @@
  */
 
 export const SUMMARY_PRESETS = {
+  'general-summary': {
+    id: 'general-summary',
+    name: '✨ General Summary',
+    category: 'general',
+    description: 'Complete overview with key points and takeaways',
+    prompt: `Create a comprehensive summary of this video that captures all essential information.
+
+Video: {{TITLE}}
+Channel: {{CHANNEL}}
+Duration: {{DURATION}}
+
+Transcript:
+{{TRANSCRIPT}}
+
+Instructions:
+Provide a thorough, well-structured summary that includes:
+
+1. **Overview**: What is this video about? (2-3 sentences)
+2. **Main Topic**: Central theme or subject matter
+3. **Key Points**: Extract and organize all major points discussed
+4. **Important Details**: Notable facts, statistics, or insights mentioned
+5. **Examples & Stories**: Significant examples or anecdotes shared
+6. **Conclusions**: Main takeaways and final thoughts
+7. **Practical Value**: What viewers should learn or do after watching
+
+Format your response with clear sections, bullet points for readability, and include relevant timestamps [🔗 MM:SS] for key moments.
+
+Make the summary:
+- Comprehensive yet concise
+- Well-organized with clear headings
+- Easy to scan and understand
+- Actionable where applicable
+- Objective and accurate to the content
+
+Output Format:
+# 📋 Video Summary
+
+## 🎯 Overview
+[2-3 sentence summary of what this video covers]
+
+## 📌 Main Topic
+[Central theme or subject]
+
+## 🔑 Key Points
+1. **[Point 1]** [🔗 Timestamp]
+   - Supporting detail or context
+   - Why this matters
+
+2. **[Point 2]** [🔗 Timestamp]
+   - Supporting detail
+   - Relevant insight
+
+3. **[Point 3]** [🔗 Timestamp]
+   - Details
+   - Implications
+
+[Continue with all key points...]
+
+## 💡 Important Insights
+- **[Insight 1]**: [Explanation] [🔗 Timestamp]
+- **[Insight 2]**: [Explanation] [🔗 Timestamp]
+- **[Insight 3]**: [Explanation] [🔗 Timestamp]
+
+## 📖 Notable Examples & Stories
+- [Story/Example 1]: [Brief description] [🔗 Timestamp]
+- [Story/Example 2]: [Brief description] [🔗 Timestamp]
+
+## 🎓 Key Takeaways
+1. [Main takeaway 1]
+2. [Main takeaway 2]
+3. [Main takeaway 3]
+
+## ✅ Action Items (if applicable)
+□ [Actionable item 1]
+□ [Actionable item 2]
+□ [Actionable item 3]
+
+## 🔍 Conclusion
+[Final summary - what's the main message or value of this video?]`
+  },
+
   'extract-quotes': {
     id: 'extract-quotes',
     name: '💬 Extract Quotes',
@@ -729,19 +810,24 @@ Transform this video content into multiple formats for different platforms:
 
 // Export categories for frontend
 export const PRESET_CATEGORIES = {
+  general: {
+    name: 'General',
+    icon: '✨',
+    presets: ['general-summary']
+  },
   students: {
     name: 'For Students/Researchers',
     icon: '📚',
-    presets: ['extract-quotes', 'facts-statistics', 'qa-extraction', 'chapter-breakdown']
+    presets: ['extract-quotes', 'facts-statistics', 'qa-extraction', 'chapter-breakdown', 'how-to-steps']
   },
   professionals: {
     name: 'For Professionals',
     icon: '💼',
-    presets: ['action-items', 'arguments-positions', 'code-commands', 'story-examples', 'how-to-steps']
+    presets: ['action-items', 'arguments-positions', 'code-commands']
   },
   creators: {
     name: 'For Content Creators',
     icon: '🎬',
-    presets: ['key-moments', 'short-form-content', 'content-repurpose']
+    presets: ['short-form-content', 'content-repurpose']
   }
 };
