@@ -818,12 +818,12 @@ export const PRESET_CATEGORIES = {
   students: {
     name: 'For Students/Researchers',
     icon: '📚',
-    presets: ['extract-quotes', 'facts-statistics', 'qa-extraction', 'chapter-breakdown', 'how-to-steps']
+    presets: ['extract-quotes', 'facts-statistics', 'qa-extraction', 'chapter-breakdown']
   },
   professionals: {
     name: 'For Professionals',
     icon: '💼',
-    presets: ['action-items', 'arguments-positions', 'code-commands']
+    presets: ['how-to-steps', 'action-items', 'arguments-positions', 'code-commands']
   },
   creators: {
     name: 'For Content Creators',
