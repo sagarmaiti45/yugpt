@@ -139,15 +139,25 @@ router.post('/generate', async (req, res, next) => {
 
     console.log('🤖 Starting OpenRouter stream...');
 
+    // Send initial heartbeat immediately
+    res.write(': heartbeat\n\n');
+    console.log('💓 Sent initial heartbeat');
+
     // Send a heartbeat comment to keep connection alive
     heartbeatInterval = setInterval(() => {
       if (!clientDisconnected) {
         res.write(': heartbeat\n\n');
         console.log('💓 Sent heartbeat');
+      } else {
+        console.log('⚠️ Client disconnected, stopping heartbeat');
+        clearInterval(heartbeatInterval);
       }
-    }, 1000); // Send heartbeat every second
+    }, 500); // Send heartbeat every 500ms (more frequent)
+
+    console.log('✅ Heartbeat interval started');
 
     // Stream summary from OpenRouter
+    console.log('⏳ Calling OpenRouter API...');
     const stream = await streamSummary(fullText, preset, controller, selectedModel);
 
     // Stop heartbeat once we have the stream
