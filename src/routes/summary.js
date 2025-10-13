@@ -27,10 +27,12 @@ router.get('/presets', (req, res) => {
  */
 router.post('/generate', async (req, res, next) => {
   const controller = new AbortController();
+  let clientDisconnected = false;
 
   // Handle client disconnect
   req.on('close', () => {
-    console.log('Client disconnected, aborting request');
+    clientDisconnected = true;
+    console.log('⚠️ Client disconnected event fired');
     controller.abort();
   });
 
@@ -48,6 +50,7 @@ router.post('/generate', async (req, res, next) => {
     console.log('PresetId:', presetId);
     console.log('Transcript provided:', !!transcript);
     console.log('Transcript length:', transcript?.length || 0);
+    console.log('Client connected:', !clientDisconnected);
 
     if (!videoId) {
       return res.status(400).json({
@@ -104,11 +107,16 @@ router.post('/generate', async (req, res, next) => {
       fullText = transcriptData.fullText;
     }
 
+    console.log('📤 Setting up SSE headers...');
+    console.log('Client still connected:', !clientDisconnected);
+
     // Set up SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
+
+    console.log('✅ SSE headers set, client status:', !clientDisconnected);
 
     // Send metadata first
     res.write(`data: ${JSON.stringify({
@@ -121,11 +129,16 @@ router.post('/generate', async (req, res, next) => {
       videoId: videoId
     })}\n\n`);
 
+    console.log('✅ Metadata sent, client status:', !clientDisconnected);
+
     // Get model from admin dashboard configuration
     const selectedModel = getSelectedModel();
 
+    console.log('🤖 Starting OpenRouter stream...');
     // Stream summary from OpenRouter
     const stream = await streamSummary(fullText, preset, controller, selectedModel);
+
+    console.log('✅ OpenRouter stream obtained, client status:', !clientDisconnected);
 
     for await (const content of parseSSEStream(stream)) {
       res.write(`data: ${JSON.stringify({
