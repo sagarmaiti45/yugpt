@@ -43,6 +43,12 @@ router.post('/generate', async (req, res, next) => {
   try {
     const { videoId, presetId, transcript } = req.body;
 
+    console.log('=== SUMMARY REQUEST ===');
+    console.log('VideoId:', videoId);
+    console.log('PresetId:', presetId);
+    console.log('Transcript provided:', !!transcript);
+    console.log('Transcript length:', transcript?.length || 0);
+
     if (!videoId) {
       return res.status(400).json({
         error: { message: 'Video ID is required', status: 400 }
@@ -65,7 +71,7 @@ router.post('/generate', async (req, res, next) => {
     // Use transcript from request if provided, otherwise fetch it
     let fullText;
     if (transcript) {
-      console.log('Using transcript provided from frontend');
+      console.log('✅ Using transcript provided from frontend');
       fullText = transcript;
     } else {
       // Fallback: Fetch transcript with fallback (for backward compatibility)
