@@ -22,6 +22,32 @@ router.get('/presets', (req, res) => {
 });
 
 /**
+ * GET /api/summary/config
+ * Get OpenRouter configuration for frontend to use
+ */
+router.get('/config', (req, res) => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const selectedModel = getSelectedModel();
+
+  if (!apiKey) {
+    return res.status(500).json({
+      error: { message: 'OpenRouter API key not configured', status: 500 }
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      apiKey: apiKey,
+      model: selectedModel,
+      apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
+      siteUrl: process.env.SITE_URL || 'https://yugpt.app',
+      siteName: process.env.SITE_NAME || 'YuGPT'
+    }
+  });
+});
+
+/**
  * POST /api/summary/generate
  * Generate summary with streaming response
  */
