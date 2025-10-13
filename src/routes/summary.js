@@ -41,7 +41,7 @@ router.post('/generate', async (req, res, next) => {
   }, 5 * 60 * 1000);
 
   try {
-    const { videoId, presetId } = req.body;
+    const { videoId, presetId, transcript } = req.body;
 
     if (!videoId) {
       return res.status(400).json({
@@ -62,31 +62,40 @@ router.post('/generate', async (req, res, next) => {
       });
     }
 
-    // Fetch transcript with fallback
-    let transcriptData;
-    try {
-      console.log('Attempting transcript fetch with youtube-transcript package...');
-      transcriptData = await getTranscriptV1(videoId);
-    } catch (error) {
-      console.log('Primary method failed, trying fallback...', error.message);
-
+    // Use transcript from request if provided, otherwise fetch it
+    let fullText;
+    if (transcript) {
+      console.log('Using transcript provided from frontend');
+      fullText = transcript;
+    } else {
+      // Fallback: Fetch transcript with fallback (for backward compatibility)
+      console.log('No transcript provided, fetching from YouTube...');
+      let transcriptData;
       try {
-        console.log('Attempting transcript fetch with youtubei.js...');
-        transcriptData = await getTranscriptV2(videoId);
-      } catch (fallbackError) {
-        console.error('Both transcript methods failed:', fallbackError);
+        console.log('Attempting transcript fetch with youtube-transcript package...');
+        transcriptData = await getTranscriptV1(videoId);
+      } catch (error) {
+        console.log('Primary method failed, trying fallback...', error.message);
 
-        if (error.message.includes('No transcript') || error.message.includes('captions')) {
-          return res.status(404).json({
-            error: {
-              message: 'No transcript/captions available for this video. Please try a video with captions enabled.',
-              status: 404,
-              type: 'NO_TRANSCRIPT'
-            }
-          });
+        try {
+          console.log('Attempting transcript fetch with youtubei.js...');
+          transcriptData = await getTranscriptV2(videoId);
+        } catch (fallbackError) {
+          console.error('Both transcript methods failed:', fallbackError);
+
+          if (error.message.includes('No transcript') || error.message.includes('captions')) {
+            return res.status(404).json({
+              error: {
+                message: 'No transcript/captions available for this video. Please try a video with captions enabled.',
+                status: 404,
+                type: 'NO_TRANSCRIPT'
+              }
+            });
+          }
+          throw error;
         }
-        throw error;
       }
+      fullText = transcriptData.fullText;
     }
 
     // Set up SSE headers
@@ -103,14 +112,14 @@ router.post('/generate', async (req, res, next) => {
         name: preset.name,
         description: preset.description
       },
-      videoId: transcriptData.videoId
+      videoId: videoId
     })}\n\n`);
 
     // Get model from admin dashboard configuration
     const selectedModel = getSelectedModel();
 
     // Stream summary from OpenRouter
-    const stream = await streamSummary(transcriptData.fullText, preset, controller, selectedModel);
+    const stream = await streamSummary(fullText, preset, controller, selectedModel);
 
     for await (const content of parseSSEStream(stream)) {
       res.write(`data: ${JSON.stringify({
