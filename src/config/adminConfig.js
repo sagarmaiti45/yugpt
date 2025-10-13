@@ -6,7 +6,7 @@
 // Temporary: In-memory storage for admin settings
 // TODO: Replace with database (MongoDB/PostgreSQL) when admin panel is ready
 let adminSettings = {
-  selectedModel: process.env.DEFAULT_MODEL || 'openai/gpt-4o',
+  selectedModel: process.env.DEFAULT_MODEL || 'google/gemini-2.5-flash-lite',
   lastUpdated: new Date().toISOString(),
   updatedBy: 'system'
 };
@@ -43,35 +43,17 @@ export function getAdminSettings() {
   return adminSettings;
 }
 
-// Available OpenRouter models organized by tier
+// Available OpenRouter models
 export const AVAILABLE_MODELS = {
-  premium: [
+  paid: [
     {
-      id: 'openai/gpt-4o',
-      name: 'GPT-4 Omni',
-      provider: 'OpenAI',
-      contextLength: '128k',
-      pricing: '$2.50 / 1M tokens',
-      description: 'Best quality, multimodal flagship model'
-    },
-    {
-      id: 'anthropic/claude-3.5-sonnet',
-      name: 'Claude 3.5 Sonnet',
-      provider: 'Anthropic',
-      contextLength: '200k',
-      pricing: '$3.00 / 1M tokens',
-      description: 'Excellent for analysis and long content'
-    },
-    {
-      id: 'google/gemini-pro-1.5',
-      name: 'Gemini Pro 1.5',
+      id: 'google/gemini-2.5-flash-lite',
+      name: 'Gemini 2.5 Flash Lite',
       provider: 'Google',
       contextLength: '1M',
-      pricing: '$1.25 / 1M tokens',
-      description: 'Huge context window, great value'
-    }
-  ],
-  optimized: [
+      pricing: '$0.10 / 1M tokens',
+      description: 'Latest Gemini, fast and efficient'
+    },
     {
       id: 'openai/gpt-4o-mini',
       name: 'GPT-4 Omni Mini',
@@ -81,54 +63,30 @@ export const AVAILABLE_MODELS = {
       description: 'Fast, affordable, high quality'
     },
     {
-      id: 'anthropic/claude-3-haiku',
-      name: 'Claude 3 Haiku',
+      id: 'anthropic/claude-3.5-haiku',
+      name: 'Claude 3.5 Haiku',
       provider: 'Anthropic',
       contextLength: '200k',
-      pricing: '$0.25 / 1M tokens',
-      description: 'Quick responses, good accuracy'
-    },
-    {
-      id: 'google/gemini-flash-1.5',
-      name: 'Gemini Flash 1.5',
-      provider: 'Google',
-      contextLength: '1M',
-      pricing: '$0.075 / 1M tokens',
-      description: 'Fastest, large context, cheap'
+      pricing: '$0.80 / 1M tokens',
+      description: 'Quick responses, excellent accuracy'
     }
   ],
   free: [
     {
-      id: 'meta-llama/llama-3.1-8b-instruct:free',
-      name: 'Llama 3.1 8B (Free)',
-      provider: 'Meta',
+      id: 'deepseek/deepseek-r1:free',
+      name: 'DeepSeek R1 (Free)',
+      provider: 'DeepSeek',
+      contextLength: '64k',
+      pricing: 'FREE',
+      description: 'Advanced reasoning model, completely free'
+    },
+    {
+      id: 'mistralai/mistral-nemo:free',
+      name: 'Mistral Nemo (Free)',
+      provider: 'Mistral AI',
       contextLength: '128k',
       pricing: 'FREE',
-      description: 'Open-source, great for testing'
-    },
-    {
-      id: 'google/gemma-2-9b-it:free',
-      name: 'Gemma 2 9B (Free)',
-      provider: 'Google',
-      contextLength: '8k',
-      pricing: 'FREE',
-      description: 'Good quality, completely free'
-    },
-    {
-      id: 'mistralai/mistral-7b-instruct:free',
-      name: 'Mistral 7B (Free)',
-      provider: 'Mistral AI',
-      contextLength: '32k',
-      pricing: 'FREE',
-      description: 'Efficient open-source model'
-    },
-    {
-      id: 'qwen/qwen-2-7b-instruct:free',
-      name: 'Qwen 2 7B (Free)',
-      provider: 'Alibaba',
-      contextLength: '32k',
-      pricing: 'FREE',
-      description: 'Multilingual, free tier'
+      description: 'Efficient open-source model, free tier'
     }
   ]
 };
