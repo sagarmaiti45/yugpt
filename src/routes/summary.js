@@ -28,17 +28,20 @@ router.get('/presets', (req, res) => {
 router.post('/generate', async (req, res, next) => {
   const controller = new AbortController();
   let clientDisconnected = false;
+  let heartbeatInterval = null;
 
   // Handle client disconnect
   req.on('close', () => {
     clientDisconnected = true;
     console.log('⚠️ Client disconnected event fired');
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
     controller.abort();
   });
 
   // Timeout after 5 minutes
   const timeout = setTimeout(() => {
     console.log('Request timeout (5 minutes)');
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
     controller.abort();
   }, 5 * 60 * 1000);
 
@@ -135,8 +138,20 @@ router.post('/generate', async (req, res, next) => {
     const selectedModel = getSelectedModel();
 
     console.log('🤖 Starting OpenRouter stream...');
+
+    // Send a heartbeat comment to keep connection alive
+    heartbeatInterval = setInterval(() => {
+      if (!clientDisconnected) {
+        res.write(': heartbeat\n\n');
+        console.log('💓 Sent heartbeat');
+      }
+    }, 1000); // Send heartbeat every second
+
     // Stream summary from OpenRouter
     const stream = await streamSummary(fullText, preset, controller, selectedModel);
+
+    // Stop heartbeat once we have the stream
+    clearInterval(heartbeatInterval);
 
     console.log('✅ OpenRouter stream obtained, client status:', !clientDisconnected);
 
@@ -158,6 +173,7 @@ router.post('/generate', async (req, res, next) => {
 
   } catch (error) {
     clearTimeout(timeout);
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
     console.error('Summary generation error:', error);
 
     if (!res.headersSent) {
