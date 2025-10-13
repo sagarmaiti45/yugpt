@@ -139,14 +139,16 @@ router.post('/generate', async (req, res, next) => {
 
     console.log('🤖 Starting OpenRouter stream...');
 
-    // Send initial heartbeat immediately
+    // Send initial heartbeat immediately and flush
     res.write(': heartbeat\n\n');
+    if (res.flush) res.flush();
     console.log('💓 Sent initial heartbeat');
 
     // Send a heartbeat comment to keep connection alive
     heartbeatInterval = setInterval(() => {
       if (!clientDisconnected) {
         res.write(': heartbeat\n\n');
+        if (res.flush) res.flush(); // Force immediate send
         console.log('💓 Sent heartbeat');
       } else {
         console.log('⚠️ Client disconnected, stopping heartbeat');
