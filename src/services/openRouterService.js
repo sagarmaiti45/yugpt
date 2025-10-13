@@ -20,8 +20,12 @@ export async function streamSummary(transcript, preset, controller, modelOverrid
   }
 
   console.log(`Using AI model: ${model}`);
+  console.log(`Transcript length: ${transcript.length} characters`);
 
   try {
+    console.log('⏰ Starting OpenRouter fetch...');
+    const fetchStartTime = Date.now();
+
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
@@ -48,6 +52,9 @@ export async function streamSummary(transcript, preset, controller, modelOverrid
       }),
       signal: controller?.signal
     });
+
+    const fetchDuration = Date.now() - fetchStartTime;
+    console.log(`✅ OpenRouter response received after ${fetchDuration}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
