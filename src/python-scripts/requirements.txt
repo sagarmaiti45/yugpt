@@ -1,0 +1,4 @@
+youtube-transcript-api>=1.2.0
+yt-dlp>=2023.10.13
+openai-whisper>=20231117
+ffmpeg-python>=0.2.0
