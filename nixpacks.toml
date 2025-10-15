@@ -1,0 +1,8 @@
+# Minimal nixpacks config - only Python (lightweight, no timeout)
+# Node.js is auto-detected, we just need to add Python
+
+[phases.setup]
+nixPkgs = ["python39", "python39Packages.pip"]
+
+[start]
+cmd = "npm start"
