@@ -1,8 +1,8 @@
 # Nixpacks configuration for Railway deployment
-# This ensures Python and ffmpeg are available for transcript extraction
+# This ensures Node.js, Python and ffmpeg are available
 
 [phases.setup]
-nixPkgs = ["python39", "python39Packages.pip", "ffmpeg"]
+nixPkgs = ["nodejs_18", "python39", "python39Packages.pip", "ffmpeg"]
 
 [phases.install]
 cmds = ["npm ci"]
