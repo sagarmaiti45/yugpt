@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "postinstall": "cd src/python-scripts && pip install -r requirements.txt || echo 'Python dependencies installation skipped'"
+    "dev": "nodemon src/index.js"
   },
   "keywords": ["youtube", "summarizer", "ai", "openrouter"],
   "author": "sagarmaiti45",
