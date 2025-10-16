@@ -43,8 +43,9 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
       file: audioFile,
       model: 'whisper-large-v3-turbo', // Fastest model (216x realtime, $0.04/hour)
       response_format: 'verbose_json', // Get detailed segments with timestamps
-      timestamp_granularities: ['segment'], // Get segment-level timestamps
-      language: 'en' // Can be auto-detected, but specifying helps latency
+      timestamp_granularities: ['segment'] // Get segment-level timestamps
+      // Language auto-detection enabled (supports 99 languages including Hindi, Spanish, French, etc.)
+      // Whisper will automatically detect the language and transcribe accordingly
     });
     const endTime = Date.now();
 
