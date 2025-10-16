@@ -7,6 +7,30 @@ import { pipeline } from 'stream/promises';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Initialize play-dl with cookies (helps bypass YouTube bot protection)
+let cookiesInitialized = false;
+async function initializePlayDl() {
+  if (cookiesInitialized) return;
+
+  try {
+    // Try to set cookies from environment variable or file
+    const cookiesPath = process.env.YOUTUBE_COOKIES_PATH;
+    if (cookiesPath && fs.existsSync(cookiesPath)) {
+      const cookies = fs.readFileSync(cookiesPath, 'utf8');
+      await play.setToken({ youtube: { cookie: cookies } });
+      console.log('[PLAY-DL] ✅ YouTube cookies loaded');
+    } else {
+      // Fallback: Try to use play-dl's built-in cookie refresh
+      await play.refreshToken();
+      console.log('[PLAY-DL] ✅ Using play-dl token refresh');
+    }
+    cookiesInitialized = true;
+  } catch (error) {
+    console.warn('[PLAY-DL] ⚠️  Could not initialize cookies:', error.message);
+    console.warn('[PLAY-DL] ⚠️  Continuing without cookies (may face rate limits)');
+  }
+}
+
 /**
  * Audio Extraction Service using play-dl
  * Extracts audio from YouTube videos for transcription
@@ -48,6 +72,9 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
   console.log(`[PLAY-DL-AUDIO] 🎬 Video ID: ${videoId}`);
 
   try {
+    // Initialize play-dl with cookies (if available)
+    await initializePlayDl();
+
     // Validate video URL
     console.log('[PLAY-DL-AUDIO] 🔍 Validating video URL...');
     const isValid = await play.validate(videoUrl);
@@ -83,12 +110,22 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
 
     // Get audio stream (play-dl automatically selects best audio format)
     const stream = await play.stream(videoUrl, {
-      quality: 2 // 0 = best, 1 = high, 2 = medium, 3 = low (we use low for speed)
+      quality: 2, // 0 = best, 1 = high, 2 = medium, 3 = low (we use medium for balance)
+      discordPlayerCompatibility: false // Disable Discord player compatibility for better performance
     });
 
-    // Write stream to file
+    // Write stream to file with error handling
     const writeStream = fs.createWriteStream(audioPath);
-    await pipeline(stream.stream, writeStream);
+
+    try {
+      await pipeline(stream.stream, writeStream);
+    } catch (pipelineError) {
+      // Clean up partial file on error
+      if (fs.existsSync(audioPath)) {
+        fs.unlinkSync(audioPath);
+      }
+      throw new Error(`Stream pipeline failed: ${pipelineError.message}`);
+    }
 
     const fileSize = fs.statSync(audioPath).size;
     const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
@@ -107,6 +144,25 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
 
   } catch (error) {
     console.error('[PLAY-DL-AUDIO] ❌ Audio extraction failed:', error.message);
+
+    // Provide helpful error messages based on error type
+    if (error.message.includes('Sign in') || error.message.includes('bot')) {
+      throw new Error(
+        'YouTube bot protection detected. This happens when:\n' +
+        '1. Too many requests from the same IP\n' +
+        '2. YouTube requires authentication\n' +
+        '3. Video has restrictions\n\n' +
+        'Solutions:\n' +
+        '- Add YOUTUBE_COOKIES_PATH environment variable with cookies.txt\n' +
+        '- Wait a few minutes and try again\n' +
+        '- Try a different video'
+      );
+    }
+
+    if (error.message.includes('private') || error.message.includes('unavailable')) {
+      throw new Error(`Video is private or unavailable: ${videoId}`);
+    }
+
     throw new Error(`Failed to extract audio: ${error.message}`);
   }
 }
