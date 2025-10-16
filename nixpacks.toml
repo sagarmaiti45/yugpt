@@ -1,8 +1,0 @@
-# Minimal nixpacks config - Node.js + Python only (lightweight, fast)
-# Just the essentials, no heavy packages
-
-[phases.setup]
-nixPkgs = ["nodejs_18", "python39", "python39Packages.pip"]
-
-[start]
-cmd = "npm start"
