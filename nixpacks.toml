@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["python310", "python310Packages.pip", "ffmpeg"]
+
+[phases.install]
+cmds = [
+  "npm install",
+  "pip install -r src/python/requirements.txt"
+]
+
+[start]
+cmd = "npm start"
