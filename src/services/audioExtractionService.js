@@ -1,13 +1,14 @@
-import ytdl from '@distube/ytdl-core';
+import play from 'play-dl';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { pipeline } from 'stream/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Audio Extraction Service using ytdl-core
+ * Audio Extraction Service using play-dl
  * Extracts audio from YouTube videos for transcription
  */
 
@@ -35,7 +36,7 @@ function extractVideoId(urlOrId) {
 }
 
 /**
- * Download audio from YouTube video
+ * Download audio from YouTube video using play-dl
  * @param {string} videoIdOrUrl - YouTube video ID or URL
  * @returns {Promise<string>} Path to downloaded audio file
  */
@@ -43,28 +44,25 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
   const videoId = extractVideoId(videoIdOrUrl);
   const videoUrl = videoIdOrUrl.includes('youtube') ? videoIdOrUrl : `https://www.youtube.com/watch?v=${videoId}`;
 
-  console.log('[YTDL-AUDIO] 🎵 Starting audio extraction...');
-  console.log(`[YTDL-AUDIO] 🎬 Video ID: ${videoId}`);
+  console.log('[PLAY-DL-AUDIO] 🎵 Starting audio extraction...');
+  console.log(`[PLAY-DL-AUDIO] 🎬 Video ID: ${videoId}`);
 
   try {
-    // ytdl-core options with headers to bypass bot detection
-    const ytdlOptions = {
-      requestOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Connection': 'keep-alive'
-        }
-      }
-    };
+    // Validate video URL
+    console.log('[PLAY-DL-AUDIO] 🔍 Validating video URL...');
+    const isValid = await play.validate(videoUrl);
 
-    // Check if video is available
-    console.log('[YTDL-AUDIO] 🔍 Fetching video info...');
-    const info = await ytdl.getInfo(videoUrl, ytdlOptions);
-    console.log(`[YTDL-AUDIO] 📹 Video: ${info.videoDetails.title}`);
-    console.log(`[YTDL-AUDIO] ⏱️  Duration: ${Math.floor(info.videoDetails.lengthSeconds / 60)}:${String(info.videoDetails.lengthSeconds % 60).padStart(2, '0')}`);
+    if (!isValid) {
+      throw new Error('Invalid YouTube video URL');
+    }
+
+    // Get video info
+    console.log('[PLAY-DL-AUDIO] 📋 Fetching video info...');
+    const info = await play.video_info(videoUrl);
+    const videoDetails = info.video_details;
+
+    console.log(`[PLAY-DL-AUDIO] 📹 Video: ${videoDetails.title}`);
+    console.log(`[PLAY-DL-AUDIO] ⏱️  Duration: ${Math.floor(videoDetails.durationInSec / 60)}:${String(videoDetails.durationInSec % 60).padStart(2, '0')}`);
 
     // Create temp directory if it doesn't exist
     const tempDir = path.join(__dirname, '../../temp');
@@ -77,46 +75,38 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
 
     // Check if file already exists (cached)
     if (fs.existsSync(audioPath)) {
-      console.log('[YTDL-AUDIO] ✅ Using cached audio file');
+      console.log('[PLAY-DL-AUDIO] ✅ Using cached audio file');
       return audioPath;
     }
 
-    console.log('[YTDL-AUDIO] ⬇️  Downloading audio (lowest quality for speed)...');
+    console.log('[PLAY-DL-AUDIO] ⬇️  Downloading audio...');
 
-    // Download audio stream with bot-bypass headers
-    const audioStream = ytdl(videoUrl, {
-      quality: 'lowestaudio',
-      filter: 'audioonly',
-      ...ytdlOptions
+    // Get audio stream (play-dl automatically selects best audio format)
+    const stream = await play.stream(videoUrl, {
+      quality: 2 // 0 = best, 1 = high, 2 = medium, 3 = low (we use low for speed)
     });
 
-    // Write to file
+    // Write stream to file
     const writeStream = fs.createWriteStream(audioPath);
-    audioStream.pipe(writeStream);
-
-    // Wait for download to complete
-    await new Promise((resolve, reject) => {
-      writeStream.on('finish', resolve);
-      writeStream.on('error', reject);
-      audioStream.on('error', reject);
-    });
+    await pipeline(stream.stream, writeStream);
 
     const fileSize = fs.statSync(audioPath).size;
     const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
 
-    console.log(`[YTDL-AUDIO] ✅ Audio downloaded successfully`);
-    console.log(`[YTDL-AUDIO] 📦 File size: ${fileSizeMB} MB`);
-    console.log(`[YTDL-AUDIO] 📂 Saved to: ${path.basename(audioPath)}`);
+    console.log(`[PLAY-DL-AUDIO] ✅ Audio downloaded successfully`);
+    console.log(`[PLAY-DL-AUDIO] 📦 File size: ${fileSizeMB} MB`);
+    console.log(`[PLAY-DL-AUDIO] 📂 Saved to: ${path.basename(audioPath)}`);
 
     // Check Groq file size limit (25MB for free tier)
     if (fileSize > 25 * 1024 * 1024) {
-      console.warn('[YTDL-AUDIO] ⚠️  Warning: File exceeds 25MB (Groq free tier limit)');
+      console.warn('[PLAY-DL-AUDIO] ⚠️  Warning: File exceeds 25MB (Groq free tier limit)');
+      console.warn('[PLAY-DL-AUDIO] ⚠️  Transcription might fail. Consider using a shorter video.');
     }
 
     return audioPath;
 
   } catch (error) {
-    console.error('[YTDL-AUDIO] ❌ Audio extraction failed:', error.message);
+    console.error('[PLAY-DL-AUDIO] ❌ Audio extraction failed:', error.message);
     throw new Error(`Failed to extract audio: ${error.message}`);
   }
 }
@@ -129,9 +119,9 @@ export function cleanupAudioFile(audioPath) {
   try {
     if (fs.existsSync(audioPath)) {
       fs.unlinkSync(audioPath);
-      console.log(`[YTDL-AUDIO] 🗑️  Cleaned up audio file: ${path.basename(audioPath)}`);
+      console.log(`[PLAY-DL-AUDIO] 🗑️  Cleaned up audio file: ${path.basename(audioPath)}`);
     }
   } catch (error) {
-    console.error(`[YTDL-AUDIO] ⚠️  Failed to cleanup audio file: ${error.message}`);
+    console.error(`[PLAY-DL-AUDIO] ⚠️  Failed to cleanup audio file: ${error.message}`);
   }
 }
