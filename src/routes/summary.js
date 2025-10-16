@@ -136,6 +136,47 @@ router.post('/generate', async (req, res, next) => {
       fullText = transcriptData.fullText;
     }
 
+    // ============================================================
+    // VALIDATE TRANSCRIPT - Check if minimal/invalid
+    // ============================================================
+    console.log('🔍 Validating transcript quality...');
+
+    // Remove timestamp markers for accurate text counting
+    const textWithoutTimestamps = fullText.replace(/\[\d{1,2}:\d{2}(?::\d{2})?\]/g, '').trim();
+
+    // Count actual words (excluding timestamps)
+    const wordCount = textWithoutTimestamps.split(/\s+/).filter(word => word.length > 0).length;
+    const charCount = textWithoutTimestamps.length;
+
+    console.log(`📊 Transcript stats: ${charCount} chars, ${wordCount} words`);
+
+    // Detect minimal/invalid transcripts
+    // Criteria: Very short text that's likely just background music/noise
+    const isMinimalTranscript = charCount < 100 || wordCount < 15;
+
+    if (isMinimalTranscript) {
+      console.log('⚠️  MINIMAL TRANSCRIPT DETECTED');
+      console.log(`   - Characters: ${charCount} (threshold: < 100)`);
+      console.log(`   - Words: ${wordCount} (threshold: < 15)`);
+      console.log('   → Likely a music-only or non-verbal video');
+
+      // Clear timeout and send special response
+      clearTimeout(timeout);
+
+      return res.status(200).json({
+        success: true,
+        type: 'MINIMAL_TRANSCRIPT',
+        message: 'This video appears to contain only background music or minimal audio content.',
+        data: {
+          charCount,
+          wordCount,
+          originalTranscript: fullText
+        }
+      });
+    }
+
+    console.log('✅ Transcript validation passed - proceeding with summary generation');
+
     console.log('📤 Setting up SSE headers...');
     console.log('Client still connected:', !clientDisconnected);
 
