@@ -13,21 +13,32 @@ async function initializePlayDl() {
   if (cookiesInitialized) return;
 
   try {
-    // Try to set cookies from environment variable or file
+    // Method 1: Try cookies from environment variable (for Railway/Docker)
+    const cookiesEnv = process.env.YOUTUBE_COOKIES;
+    if (cookiesEnv) {
+      await play.setToken({ youtube: { cookie: cookiesEnv } });
+      console.log('[PLAY-DL] ✅ YouTube cookies loaded from YOUTUBE_COOKIES env variable');
+      cookiesInitialized = true;
+      return;
+    }
+
+    // Method 2: Try cookies from file path
     const cookiesPath = process.env.YOUTUBE_COOKIES_PATH;
     if (cookiesPath && fs.existsSync(cookiesPath)) {
       const cookies = fs.readFileSync(cookiesPath, 'utf8');
       await play.setToken({ youtube: { cookie: cookies } });
-      console.log('[PLAY-DL] ✅ YouTube cookies loaded');
-    } else {
-      // Fallback: Try to use play-dl's built-in cookie refresh
-      await play.refreshToken();
-      console.log('[PLAY-DL] ✅ Using play-dl token refresh');
+      console.log('[PLAY-DL] ✅ YouTube cookies loaded from file');
+      cookiesInitialized = true;
+      return;
     }
+
+    // Method 3: Fallback to play-dl's built-in token refresh (less reliable)
+    await play.refreshToken();
+    console.log('[PLAY-DL] ⚠️  Using play-dl token refresh (may not bypass bot protection)');
     cookiesInitialized = true;
   } catch (error) {
     console.warn('[PLAY-DL] ⚠️  Could not initialize cookies:', error.message);
-    console.warn('[PLAY-DL] ⚠️  Continuing without cookies (may face rate limits)');
+    console.warn('[PLAY-DL] ⚠️  Continuing without authentication (will likely fail on restricted videos)');
   }
 }
 
