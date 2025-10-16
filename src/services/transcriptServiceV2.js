@@ -39,11 +39,22 @@ export async function getTranscript(videoIdOrUrl, retries = 2) {
     // Initialize YouTube Internal API
     const youtube = await Innertube.create();
 
-    // Get video info
-    const info = await youtube.getInfo(videoId);
+    // Suppress youtubei.js parser error logs (they spam the console and cause Railway rate limiting)
+    const originalConsoleError = console.error;
+    let info, transcriptData;
 
-    // Get transcript/captions
-    const transcriptData = await info.getTranscript();
+    try {
+      console.error = () => {}; // Suppress parser errors
+
+      // Get video info
+      info = await youtube.getInfo(videoId);
+
+      // Get transcript/captions
+      transcriptData = await info.getTranscript();
+    } finally {
+      // Always restore console.error
+      console.error = originalConsoleError;
+    }
 
     if (!transcriptData || !transcriptData.transcript) {
       throw new Error('No transcript available for this video');
