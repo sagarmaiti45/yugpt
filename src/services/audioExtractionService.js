@@ -47,8 +47,22 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
   console.log(`[YTDL-AUDIO] 🎬 Video ID: ${videoId}`);
 
   try {
+    // ytdl-core options with headers to bypass bot detection
+    const ytdlOptions = {
+      requestOptions: {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive'
+        }
+      }
+    };
+
     // Check if video is available
-    const info = await ytdl.getInfo(videoUrl);
+    console.log('[YTDL-AUDIO] 🔍 Fetching video info...');
+    const info = await ytdl.getInfo(videoUrl, ytdlOptions);
     console.log(`[YTDL-AUDIO] 📹 Video: ${info.videoDetails.title}`);
     console.log(`[YTDL-AUDIO] ⏱️  Duration: ${Math.floor(info.videoDetails.lengthSeconds / 60)}:${String(info.videoDetails.lengthSeconds % 60).padStart(2, '0')}`);
 
@@ -69,10 +83,11 @@ export async function downloadYouTubeAudio(videoIdOrUrl) {
 
     console.log('[YTDL-AUDIO] ⬇️  Downloading audio (lowest quality for speed)...');
 
-    // Download audio stream (lowest quality for speed and size)
+    // Download audio stream with bot-bypass headers
     const audioStream = ytdl(videoUrl, {
       quality: 'lowestaudio',
-      filter: 'audioonly'
+      filter: 'audioonly',
+      ...ytdlOptions
     });
 
     // Write to file
