@@ -1,11 +1,16 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "python310", "python310Packages.pip", "ffmpeg"]
+nixPkgs = ["nodejs_20", "python310", "python310Packages.pip", "python310Packages.virtualenv", "ffmpeg"]
 
 [phases.install]
 cmds = [
   "npm install",
-  "pip install -r src/python/requirements.txt"
+  "python3 -m venv /opt/venv",
+  "/opt/venv/bin/pip install --upgrade pip",
+  "/opt/venv/bin/pip install -r src/python/requirements.txt"
 ]
 
 [start]
 cmd = "npm start"
+
+[variables]
+PYTHON_PATH = "/opt/venv/bin/python3"
