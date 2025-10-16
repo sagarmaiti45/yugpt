@@ -53,7 +53,7 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
     console.log(`[GROQ-WHISPER] 🌍 Auto-detected language: ${detectedLanguage}`);
 
     // If detected as English but text looks garbled, retry with Hindi
-    if (detectedLanguage === 'en' || detectedLanguage === 'english') {
+    if (detectedLanguage && detectedLanguage.toLowerCase().startsWith('en')) {
       const sampleText = transcription.segments.slice(0, 8).map(s => s.text).join(' ');
 
       console.log(`[GROQ-WHISPER] 🔍 Checking sample text for garbage: "${sampleText.substring(0, 100)}..."`);
