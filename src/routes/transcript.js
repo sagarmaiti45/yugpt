@@ -1,13 +1,16 @@
 import express from 'express';
-import { getTranscriptWithPython, getTranscriptWithWhisper } from '../services/pythonTranscriptService.js';
+import { getTranscript as getTranscriptV1 } from '../services/transcriptService.js';
+import { getTranscript as getTranscriptV2 } from '../services/transcriptServiceV2.js';
+import { getAndDownloadMp3, cleanupMp3File } from '../services/rapidApiService.js';
+import { transcribeWithGroqWhisper } from '../services/groqWhisperService.js';
 
 const router = express.Router();
 
 /**
  * GET /api/transcript/:videoId
  * Fetch transcript for a YouTube video with 3-tier fallback system:
- * TIER 1: Python youtube-transcript-api (FASTEST - <1s)
- * TIER 2: Python Whisper AI (SLOW - 1-5min, works without subtitles)
+ * TIER 1: Node.js transcript libraries (youtube-transcript / youtubei.js) - FASTEST
+ * TIER 2: RapidAPI MP3 + Groq Whisper AI (FAST & CHEAP - works without subtitles)
  * TIER 3: Frontend DOM extraction (final fallback)
  */
 router.get('/:videoId', async (req, res, next) => {
@@ -31,64 +34,108 @@ router.get('/:videoId', async (req, res, next) => {
     let methodUsed;
 
     // ============================================================
-    // TIER 1: Python youtube-transcript-api (PRIMARY - FASTEST)
+    // TIER 1: Node.js Transcript Libraries (PRIMARY - FASTEST)
     // ============================================================
     try {
-      console.log('\n[TIER 1/3] 🟢 Trying Python youtube-transcript-api...');
-      console.log('[TIER 1] ⚡ Speed: <1 second');
+      console.log('\n[TIER 1/3] 🟢 Trying Node.js transcript libraries...');
 
-      result = await getTranscriptWithPython(videoId);
-      methodUsed = 'python-transcript-api';
+      // Try youtube-transcript package first
+      try {
+        console.log('[TIER 1A] Attempting youtube-transcript package...');
+        result = await getTranscriptV1(videoId);
+        result.method = 'nodejs-v1';
+        methodUsed = 'nodejs-v1';
 
-      console.log(`\n${'✅'.repeat(40)}`);
-      console.log('🎉 SUCCESS! TRANSCRIPT RETRIEVED');
-      console.log(`📊 Method: ${methodUsed}`);
-      console.log(`📝 Segments: ${result.transcript.length}`);
-      console.log(`⚡ Speed: <1 second`);
-      console.log('✅'.repeat(40) + '\n');
+        console.log(`\n${'✅'.repeat(40)}`);
+        console.log('🎉 SUCCESS! TRANSCRIPT RETRIEVED');
+        console.log(`📊 Method: nodejs-v1 (youtube-transcript package)`);
+        console.log(`📝 Segments: ${result.transcript.length}`);
+        console.log(`⚡ Speed: <1 second`);
+        console.log('✅'.repeat(40) + '\n');
+
+      } catch (error1a) {
+        console.log(`[TIER 1A] ❌ Failed: ${error1a.message}`);
+        console.log('[TIER 1B] Trying alternate library (youtubei.js)...');
+
+        // Try youtubei.js as backup
+        result = await getTranscriptV2(videoId);
+        result.method = 'nodejs-v2';
+        methodUsed = 'nodejs-v2';
+
+        console.log(`\n${'✅'.repeat(40)}`);
+        console.log('🎉 SUCCESS! TRANSCRIPT RETRIEVED');
+        console.log(`📊 Method: nodejs-v2 (youtubei.js)`);
+        console.log(`📝 Segments: ${result.transcript.length}`);
+        console.log(`⚡ Speed: <1 second`);
+        console.log('✅'.repeat(40) + '\n');
+      }
 
     } catch (error1) {
-      console.log(`\n[TIER 1] ❌ Python transcript-api failed`);
+      console.log(`\n[TIER 1] ❌ Both Node.js libraries failed`);
       console.log(`[TIER 1] Reason: ${error1.message}`);
       console.log('[TIER 1] This usually means: No captions/subtitles available\n');
 
       // ============================================================
-      // TIER 2: Python Whisper AI (SLOW BUT WORKS WITHOUT SUBTITLES)
+      // TIER 2: RapidAPI MP3 + Groq Whisper AI (FAST & CHEAP)
       // ============================================================
-      try {
-        console.log('[TIER 2/3] 🔵 Trying Python Whisper AI...');
-        console.log('[TIER 2] This works even without captions!');
-        console.log('[TIER 2] ⏳ Estimated time: 1-5 minutes\n');
 
-        // Use 'tiny' model for speed (can be changed to 'base', 'small', etc.)
-        const whisperModel = process.env.WHISPER_MODEL || 'tiny';
-
-        result = await getTranscriptWithWhisper(videoId, whisperModel);
-        methodUsed = 'python-whisper';
-
-        console.log(`\n${'✅'.repeat(40)}`);
-        console.log('🎉 SUCCESS! AUDIO TRANSCRIBED WITH WHISPER');
-        console.log(`📊 Method: ${methodUsed}`);
-        console.log(`📝 Segments: ${result.transcript.length}`);
-        console.log(`🌍 Language: ${result.language}`);
-        console.log(`🤖 Model: ${result.model}`);
-        console.log('✅'.repeat(40) + '\n');
-
-      } catch (error2) {
-        console.log(`\n[TIER 2] ❌ Python Whisper failed: ${error2.message}`);
+      // Check if Groq API is configured
+      if (!process.env.GROQ_API_KEY) {
+        console.log('[TIER 2] ⚠️  Groq API key not configured - skipping Whisper AI');
         console.log('\n' + '❌'.repeat(40));
-        console.log('⚠️  ALL BACKEND METHODS FAILED (Python transcript-api + Whisper)');
+        console.log('⚠️  ALL BACKEND METHODS FAILED');
         console.log('📱 Client should try DOM extraction as final fallback');
         console.log('❌'.repeat(40) + '\n');
 
-        // All backend methods failed - tell frontend to try DOM extraction
         return res.status(404).json({
           error: {
             message: 'No transcript available via backend. Client should try DOM extraction.',
             status: 404,
             type: 'NO_TRANSCRIPT',
+            tryDomExtraction: true
+          }
+        });
+      }
+
+      try {
+        console.log('[TIER 2/3] 🔵 Trying RapidAPI MP3 + Groq Whisper...');
+        console.log('[TIER 2] This works even without captions!');
+        console.log('[TIER 2] ⏳ Estimated time: 10-30 seconds\n');
+
+        // Step 1: Get MP3 from RapidAPI
+        const audioPath = await getAndDownloadMp3(videoId);
+
+        // Step 2: Transcribe with Groq Whisper
+        result = await transcribeWithGroqWhisper(audioPath, videoId);
+        methodUsed = 'rapidapi-groq-whisper';
+
+        // Step 3: Cleanup audio file
+        cleanupMp3File(audioPath);
+
+        console.log(`\n${'✅'.repeat(40)}`);
+        console.log('🎉 SUCCESS! AUDIO TRANSCRIBED WITH GROQ WHISPER');
+        console.log(`📊 Method: rapidapi-groq-whisper`);
+        console.log(`📝 Segments: ${result.transcript.length}`);
+        console.log(`🌍 Language: ${result.language}`);
+        console.log(`⚡ Speed: Ultra-fast (216x realtime)`);
+        console.log(`💰 Cost: ~$0.11 per hour of audio`);
+        console.log('✅'.repeat(40) + '\n');
+
+      } catch (error2) {
+        console.log(`\n[TIER 2] ❌ RapidAPI + Whisper failed: ${error2.message}`);
+        console.log('\n' + '❌'.repeat(40));
+        console.log('⚠️  ALL BACKEND METHODS FAILED (Node.js + RapidAPI + Whisper)');
+        console.log('📱 Client should try DOM extraction as final fallback');
+        console.log('❌'.repeat(40) + '\n');
+
+        // All backend methods failed
+        return res.status(404).json({
+          error: {
+            message: 'No transcript available via any backend method. Client should try DOM extraction.',
+            status: 404,
+            type: 'NO_TRANSCRIPT',
             tryDomExtraction: true,
-            details: `Python transcript-api failed, Whisper failed: ${error2.message}`
+            details: `Node.js failed, RapidAPI + Whisper failed: ${error2.message}`
           }
         });
       }
