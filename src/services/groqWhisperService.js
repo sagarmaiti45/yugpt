@@ -54,10 +54,19 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
 
     // If detected as English but text looks garbled, retry with Hindi
     if (detectedLanguage === 'en' || detectedLanguage === 'english') {
-      const sampleText = transcription.segments.slice(0, 5).map(s => s.text).join(' ');
-      const hasGarbledText = /[^\x00-\x7F]/.test(sampleText) || // Non-ASCII chars
-                             sampleText.includes('地方') || // Chinese chars
-                             /\b(deploy|slams|Undervolved|empowermentomat)\b/i.test(sampleText); // Nonsense words
+      const sampleText = transcription.segments.slice(0, 8).map(s => s.text).join(' ');
+
+      console.log(`[GROQ-WHISPER] 🔍 Checking sample text for garbage: "${sampleText.substring(0, 100)}..."`);
+
+      // Multiple detection patterns for garbled/poor quality transcription
+      const hasGarbledText =
+        /[^\x00-\x7F]/.test(sampleText) || // Non-ASCII chars (Chinese, Korean, etc.)
+        /(.)\1{4,}/.test(sampleText) || // Repeated chars (Aaaaaaaa, rrrrrr)
+        /\b(esse|Strach|fandom|abins|momyy|Huuure)\b/i.test(sampleText) || // Nonsense words
+        /xo v|Kid abins|trapped us/i.test(sampleText) || // Garbled phrases
+        (sampleText.match(/[A-Z]{2,}/g) || []).length > 3; // Too many random uppercase words
+
+      console.log(`[GROQ-WHISPER] 🔍 Garbled text detected: ${hasGarbledText}`);
 
       if (hasGarbledText) {
         console.log('[GROQ-WHISPER] ⚠️  Detected as English but text appears garbled');
