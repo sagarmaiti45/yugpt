@@ -53,25 +53,94 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
     console.log(`[GROQ-WHISPER] 🌍 Auto-detected language: ${detectedLanguage}`);
 
     // If detected as English but text looks garbled, retry with Hindi
+    // IMPROVED DETECTION: Check MORE segments + use AGGRESSIVE heuristics
     if (detectedLanguage && detectedLanguage.toLowerCase().startsWith('en')) {
-      const sampleText = transcription.segments.slice(0, 8).map(s => s.text).join(' ');
+      // Check first 15 segments for sample (not just 8)
+      const sampleSegments = transcription.segments.slice(0, Math.min(15, transcription.segments.length));
+      const sampleText = sampleSegments.map(s => s.text).join(' ');
 
-      console.log(`[GROQ-WHISPER] 🔍 Checking sample text for garbage: "${sampleText.substring(0, 100)}..."`);
+      // ALSO check ALL text for full analysis
+      const fullText = transcription.segments.map(s => s.text).join(' ');
 
-      // Multiple detection patterns for garbled/poor quality transcription
-      const hasGarbledText =
-        /[^\x00-\x7F]/.test(sampleText) || // Non-ASCII chars (Chinese, Korean, etc.)
-        /(.)\1{4,}/.test(sampleText) || // Repeated chars (Aaaaaaaa, rrrrrr)
-        /\b(esse|Strach|fandom|abins|momyy|Huuure|theydd|Eeva|Disconnected by my|Shepera|Chappash|COVID-19 tapi)\b/i.test(sampleText) || // Nonsense words/phrases
-        /xo v|Kid abins|trapped us|ydd |Eeva made|doesn mean to be a fool/i.test(sampleText) || // Garbled phrases
-        (sampleText.match(/[A-Z]{2,}/g) || []).length > 3 || // Too many random uppercase words
-        /\b\w{2}dd\b|\b\w{2}yy\b/i.test(sampleText) || // Words ending in "dd" or "yy" (theydd, etc.)
-        (sampleText.split(/\s+/).filter(w => w.length > 2 && /[A-Z]/.test(w[0]) && /[a-z]{2}[A-Z]/.test(w)).length > 2); // Mixed case nonsense (EeVa, etc.)
+      console.log(`[GROQ-WHISPER] 🔍 Checking sample text (first 15 segments): "${sampleText.substring(0, 100)}..."`);
 
-      console.log(`[GROQ-WHISPER] 🔍 Garbled text detected: ${hasGarbledText}`);
+      // Calculate non-Latin character percentage
+      const nonLatinCount = (fullText.match(/[^\x00-\x7F]/g) || []).length;
+      const totalChars = fullText.length;
+      const nonLatinPercent = totalChars > 0 ? (nonLatinCount / totalChars * 100) : 0;
 
-      if (hasGarbledText) {
-        console.log('[GROQ-WHISPER] ⚠️  Detected as English but text appears garbled');
+      console.log(`[GROQ-WHISPER] 📊 Non-Latin characters: ${nonLatinPercent.toFixed(1)}%`);
+
+      // SUPER AGGRESSIVE RETRY LOGIC - 6 different checks
+      let shouldRetryHindi = false;
+      let retryReason = '';
+
+      // Reason 1: Detected as English but has ANY non-Latin chars (lowered from 5% to 1%)
+      if (nonLatinPercent > 1) {
+        shouldRetryHindi = true;
+        retryReason = `Non-Latin chars: ${nonLatinPercent.toFixed(1)}%`;
+      }
+
+      // Reason 2: Known garbage patterns (check FULL text, not just sample)
+      const garbagePatterns = [
+        'Shepera', 'Chappash', 'theydd', 'Eeva',
+        'COVID-19 tapi', 'doesn mean to be a fool',
+        'nuo\'a', 'hculpa', 'Strach', 'fandom', 'abins',
+        'consumptionolution', 'negating', 'Matthew Another'
+      ];
+
+      for (const pattern of garbagePatterns) {
+        if (fullText.includes(pattern)) {
+          shouldRetryHindi = true;
+          retryReason = `Garbage pattern: '${pattern}'`;
+          break;
+        }
+      }
+
+      // Reason 3: Too many repeated characters
+      if (!shouldRetryHindi && /(.)\1{4,}/.test(fullText)) {
+        shouldRetryHindi = true;
+        retryReason = 'Repeated characters detected';
+      }
+
+      // Reason 4: Mixed scripts (Korean, Russian, etc.)
+      if (!shouldRetryHindi) {
+        for (const char of fullText) {
+          if (char.charCodeAt(0) > 0x1000) {
+            shouldRetryHindi = true;
+            retryReason = 'Mixed scripts detected (Korean/Russian/etc)';
+            break;
+          }
+        }
+      }
+
+      // Reason 5: Suspicious short segments (>30% of segments are < 10 chars)
+      if (!shouldRetryHindi) {
+        const shortSegments = transcription.segments.filter(s => s.text.trim().length < 10);
+        const shortPercent = (shortSegments.length / transcription.segments.length) * 100;
+        if (shortPercent > 30) {
+          shouldRetryHindi = true;
+          retryReason = `Too many short segments: ${shortSegments.length}/${transcription.segments.length} (${shortPercent.toFixed(0)}%)`;
+        }
+      }
+
+      // Reason 6: Too many single-word segments (>20%)
+      if (!shouldRetryHindi) {
+        const singleWords = transcription.segments.filter(s => s.text.trim().split(/\s+/).length === 1);
+        const singleWordPercent = (singleWords.length / transcription.segments.length) * 100;
+        if (singleWordPercent > 20) {
+          shouldRetryHindi = true;
+          retryReason = `Too many single-word segments: ${singleWords.length}/${transcription.segments.length} (${singleWordPercent.toFixed(0)}%)`;
+        }
+      }
+
+      console.log(`[GROQ-WHISPER] 🔍 Hindi retry needed: ${shouldRetryHindi}`);
+      if (shouldRetryHindi) {
+        console.log(`[GROQ-WHISPER] 🔍 Retry reason: ${retryReason}`);
+      }
+
+      if (shouldRetryHindi) {
+        console.log('[GROQ-WHISPER] ⚠️  Detected as English but appears to be Hindi');
         console.log('[GROQ-WHISPER] 🔄 Retrying with Hindi language hint...');
 
         transcription = await groq.audio.transcriptions.create({
@@ -82,7 +151,12 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
           language: 'hi' // Force Hindi
         });
 
-        console.log('[GROQ-WHISPER] ✅ Retried with Hindi');
+        console.log('[GROQ-WHISPER] ✅ Retried with Hindi!');
+        console.log(`[GROQ-WHISPER] 🌍 New language: ${transcription.language}`);
+
+        // Log new sample
+        const newSample = transcription.segments.slice(0, 3).map(s => s.text.substring(0, 50)).join(' ');
+        console.log(`[GROQ-WHISPER] 📝 New sample: ${newSample}...`);
       }
     }
 
