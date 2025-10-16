@@ -39,14 +39,42 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
 
     // Transcribe with Groq Whisper
     const startTime = Date.now();
-    const transcription = await groq.audio.transcriptions.create({
-      file: audioFile,
-      model: 'whisper-large-v3-turbo', // Fastest model (216x realtime, $0.04/hour)
-      response_format: 'verbose_json', // Get detailed segments with timestamps
-      timestamp_granularities: ['segment'] // Get segment-level timestamps
-      // Language auto-detection enabled (supports 99 languages including Hindi, Spanish, French, etc.)
-      // Whisper will automatically detect the language and transcribe accordingly
+
+    // First attempt: Auto-detect language
+    console.log('[GROQ-WHISPER] 🔍 Attempting auto-detection first...');
+    let transcription = await groq.audio.transcriptions.create({
+      file: fs.createReadStream(audioFilePath),
+      model: 'whisper-large-v3-turbo',
+      response_format: 'verbose_json',
+      timestamp_granularities: ['segment']
     });
+
+    const detectedLanguage = transcription.language;
+    console.log(`[GROQ-WHISPER] 🌍 Auto-detected language: ${detectedLanguage}`);
+
+    // If detected as English but text looks garbled, retry with Hindi
+    if (detectedLanguage === 'en' || detectedLanguage === 'english') {
+      const sampleText = transcription.segments.slice(0, 5).map(s => s.text).join(' ');
+      const hasGarbledText = /[^\x00-\x7F]/.test(sampleText) || // Non-ASCII chars
+                             sampleText.includes('地方') || // Chinese chars
+                             /\b(deploy|slams|Undervolved|empowermentomat)\b/i.test(sampleText); // Nonsense words
+
+      if (hasGarbledText) {
+        console.log('[GROQ-WHISPER] ⚠️  Detected as English but text appears garbled');
+        console.log('[GROQ-WHISPER] 🔄 Retrying with Hindi language hint...');
+
+        transcription = await groq.audio.transcriptions.create({
+          file: fs.createReadStream(audioFilePath),
+          model: 'whisper-large-v3-turbo',
+          response_format: 'verbose_json',
+          timestamp_granularities: ['segment'],
+          language: 'hi' // Force Hindi
+        });
+
+        console.log('[GROQ-WHISPER] ✅ Retried with Hindi');
+      }
+    }
+
     const endTime = Date.now();
 
     console.log(`[GROQ-WHISPER] ✅ Transcription complete in ${(endTime - startTime) / 1000}s`);
