@@ -1,3 +1,10 @@
+// Suppress deprecation warnings for cleaner logs
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+  if (warning.name === 'DeprecationWarning') return;
+  console.warn(warning);
+});
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -69,5 +76,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🚀 YuGPT Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ 4-Tier Transcript System Ready`);
+  console.log(`✅ 3-Tier Transcript System Ready (Node.js + Groq Whisper + DOM)`);
 });
