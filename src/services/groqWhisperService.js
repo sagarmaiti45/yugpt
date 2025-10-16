@@ -62,8 +62,8 @@ export async function transcribeWithGroqWhisper(audioFilePath, videoId) {
       const hasGarbledText =
         /[^\x00-\x7F]/.test(sampleText) || // Non-ASCII chars (Chinese, Korean, etc.)
         /(.)\1{4,}/.test(sampleText) || // Repeated chars (Aaaaaaaa, rrrrrr)
-        /\b(esse|Strach|fandom|abins|momyy|Huuure|theydd|Eeva|Disconnected by my)\b/i.test(sampleText) || // Nonsense words/phrases
-        /xo v|Kid abins|trapped us|ydd |Eeva made/i.test(sampleText) || // Garbled phrases
+        /\b(esse|Strach|fandom|abins|momyy|Huuure|theydd|Eeva|Disconnected by my|Shepera|Chappash|COVID-19 tapi)\b/i.test(sampleText) || // Nonsense words/phrases
+        /xo v|Kid abins|trapped us|ydd |Eeva made|doesn mean to be a fool/i.test(sampleText) || // Garbled phrases
         (sampleText.match(/[A-Z]{2,}/g) || []).length > 3 || // Too many random uppercase words
         /\b\w{2}dd\b|\b\w{2}yy\b/i.test(sampleText) || // Words ending in "dd" or "yy" (theydd, etc.)
         (sampleText.split(/\s+/).filter(w => w.length > 2 && /[A-Z]/.test(w[0]) && /[a-z]{2}[A-Z]/.test(w)).length > 2); // Mixed case nonsense (EeVa, etc.)
