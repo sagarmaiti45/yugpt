@@ -449,6 +449,76 @@
       to { transform: rotate(360deg); }
     }
 
+    .preset-token-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+
+    .preset-token-card:hover {
+      border-color: #cbd5e0;
+    }
+
+    .preset-token-info {
+      flex: 1;
+    }
+
+    .preset-token-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 4px;
+    }
+
+    .preset-token-id {
+      font-size: 12px;
+      color: #718096;
+      font-family: 'Courier New', monospace;
+    }
+
+    .preset-token-input-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .preset-token-input {
+      width: 100px;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .preset-token-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .preset-token-btn {
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    .preset-token-btn:hover {
+      opacity: 0.9;
+    }
+
     @media (max-width: 768px) {
       .models-grid {
         grid-template-columns: 1fr;
@@ -463,6 +533,20 @@
         margin: 0 auto 20px;
         display: block;
         width: fit-content;
+      }
+
+      .preset-token-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .preset-token-input-group {
+        width: 100%;
+      }
+
+      .preset-token-input {
+        flex: 1;
       }
     }
   </style>
@@ -555,6 +639,39 @@
             </div>
           </div>
         </div>
+
+        <!-- Max Tokens Configuration -->
+        <div class="model-section">
+          <div class="section-header">
+            <div class="section-icon optimized">📏</div>
+            <div>
+              <div class="section-title">Max Tokens Configuration</div>
+              <div class="section-subtitle">Control output length for each preset</div>
+            </div>
+          </div>
+          <div id="maxTokensLoading" class="loading" style="padding: 20px;">
+            <div class="spinner" style="width: 30px; height: 30px;"></div>
+            <p>Loading max tokens config...</p>
+          </div>
+          <div id="maxTokensContainer" style="display: none;">
+            <div class="custom-model-form" style="background: linear-gradient(135deg, #f0fff4 0%, #e6ffed 100%); border-color: #c6f6d5;">
+              <h4 style="color: #22543d;">Default Max Tokens</h4>
+              <p style="color: #2f855a; margin-bottom: 12px;">This applies to any preset not configured below (Range: 100-10000)</p>
+              <div class="custom-input-group">
+                <input type="number" id="defaultMaxTokens" min="100" max="10000" placeholder="e.g., 4000" style="border-color: #9ae6b4;" />
+                <button onclick="updateDefaultMaxTokens()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">Update Default</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="font-size: 16px; font-weight: 600; color: #2d3748;">Preset-Specific Max Tokens</h4>
+                <button onclick="saveAllMaxTokens()" class="btn" style="width: auto; padding: 8px 20px; font-size: 13px;">💾 Save All Changes</button>
+              </div>
+              <div id="presetsMaxTokensList" style="display: grid; gap: 12px;"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -599,6 +716,7 @@
       document.getElementById('loginCard').style.display = 'none';
       document.getElementById('adminPanel').classList.add('active');
       await loadModels();
+      await loadMaxTokens();
     }
 
     async function loadModels() {
@@ -719,6 +837,180 @@
       document.getElementById('loginCard').style.display = 'block';
       document.getElementById('password').value = '';
       document.getElementById('loginError').innerHTML = '';
+    }
+
+    // Max Tokens Management
+    async function loadMaxTokens() {
+      try {
+        const response = await fetch('/api/admin/presets/max-tokens', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load max tokens');
+
+        const data = await response.json();
+
+        // Set default max tokens value
+        document.getElementById('defaultMaxTokens').value = data.data.default;
+
+        // Render preset cards
+        renderPresetsMaxTokens(data.data.presets);
+
+        // Hide loading, show content
+        document.getElementById('maxTokensLoading').style.display = 'none';
+        document.getElementById('maxTokensContainer').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error loading max tokens:', error);
+        document.getElementById('maxTokensLoading').innerHTML = '<p style="color: #c53030;">Failed to load max tokens configuration</p>';
+      }
+    }
+
+    function renderPresetsMaxTokens(presets) {
+      const container = document.getElementById('presetsMaxTokensList');
+      container.innerHTML = presets.map(preset => `
+        <div class="preset-token-card">
+          <div class="preset-token-info">
+            <div class="preset-token-name">${preset.name}</div>
+            <div class="preset-token-id">${preset.id}</div>
+          </div>
+          <div class="preset-token-input-group">
+            <input
+              type="number"
+              id="preset-${preset.id}"
+              value="${preset.maxTokens}"
+              min="100"
+              max="10000"
+              class="preset-token-input"
+            />
+            <button onclick="updatePresetMaxTokens('${preset.id}')" class="preset-token-btn">Update</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateDefaultMaxTokens() {
+      const maxTokens = parseInt(document.getElementById('defaultMaxTokens').value);
+
+      if (!maxTokens || maxTokens < 100 || maxTokens > 10000) {
+        showMessage('Default max tokens must be between 100 and 10000', 'error');
+        return;
+      }
+
+      try {
+        showMessage('Updating default max tokens...', 'info');
+
+        const response = await fetch('/api/admin/presets/max-tokens/update-default', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ maxTokens })
+        });
+
+        if (!response.ok) throw new Error('Failed to update default max tokens');
+
+        showMessage(`Default max tokens updated to ${maxTokens}`, 'success');
+
+      } catch (error) {
+        console.error('Error updating default max tokens:', error);
+        showMessage('Failed to update default max tokens', 'error');
+      }
+    }
+
+    async function updatePresetMaxTokens(presetId) {
+      const inputElement = document.getElementById(`preset-${presetId}`);
+      const maxTokens = parseInt(inputElement.value);
+
+      if (!maxTokens || maxTokens < 100 || maxTokens > 10000) {
+        showMessage('Max tokens must be between 100 and 10000', 'error');
+        return;
+      }
+
+      try {
+        showMessage('Updating preset max tokens...', 'info');
+
+        const response = await fetch('/api/admin/presets/max-tokens/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ presetId, maxTokens })
+        });
+
+        if (!response.ok) throw new Error('Failed to update preset max tokens');
+
+        showMessage(`Preset "${presetId}" max tokens updated to ${maxTokens}`, 'success');
+
+      } catch (error) {
+        console.error('Error updating preset max tokens:', error);
+        showMessage('Failed to update preset max tokens', 'error');
+      }
+    }
+
+    async function saveAllMaxTokens() {
+      try {
+        showMessage('Saving all changes...', 'info');
+
+        // Collect all preset values
+        const presets = {};
+        const inputs = document.querySelectorAll('.preset-token-input');
+
+        let hasError = false;
+        inputs.forEach(input => {
+          const presetId = input.id.replace('preset-', '');
+          const value = parseInt(input.value);
+
+          if (!value || value < 100 || value > 10000) {
+            showMessage(`Invalid value for ${presetId}: must be between 100 and 10000`, 'error');
+            hasError = true;
+            return;
+          }
+
+          presets[presetId] = value;
+        });
+
+        if (hasError) return;
+
+        // Also update default if changed
+        const defaultMaxTokens = parseInt(document.getElementById('defaultMaxTokens').value);
+        if (!defaultMaxTokens || defaultMaxTokens < 100 || defaultMaxTokens > 10000) {
+          showMessage('Default max tokens must be between 100 and 10000', 'error');
+          return;
+        }
+
+        // Bulk update presets
+        const presetsResponse = await fetch('/api/admin/presets/max-tokens/bulk-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ presets })
+        });
+
+        if (!presetsResponse.ok) throw new Error('Failed to bulk update presets');
+
+        // Update default
+        const defaultResponse = await fetch('/api/admin/presets/max-tokens/update-default', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ maxTokens: defaultMaxTokens })
+        });
+
+        if (!defaultResponse.ok) throw new Error('Failed to update default');
+
+        showMessage('✅ All changes saved successfully!', 'success');
+
+      } catch (error) {
+        console.error('Error saving all changes:', error);
+        showMessage('Failed to save changes. Please try again.', 'error');
+      }
     }
   </script>
 </body>
