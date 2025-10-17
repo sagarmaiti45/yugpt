@@ -1,5 +1,16 @@
 import express from 'express';
-import { getSelectedModel, updateSelectedModel, getAdminSettings, AVAILABLE_MODELS } from '../config/adminConfig.js';
+import {
+  getSelectedModel,
+  updateSelectedModel,
+  getAdminSettings,
+  AVAILABLE_MODELS,
+  getPresetMaxTokens,
+  getAllPresetMaxTokens,
+  updatePresetMaxTokens,
+  updateDefaultMaxTokens,
+  bulkUpdatePresetMaxTokens
+} from '../config/adminConfig.js';
+import { SUMMARY_PRESETS } from '../config/summaryPresets.js';
 
 const router = express.Router();
 
@@ -83,6 +94,140 @@ router.get('/settings', requireAuth, (req, res) => {
     success: true,
     data: getAdminSettings()
   });
+});
+
+/**
+ * GET /api/admin/presets/max-tokens
+ * Get max tokens configuration for all presets
+ */
+router.get('/presets/max-tokens', requireAuth, (req, res) => {
+  try {
+    const maxTokensConfig = getAllPresetMaxTokens();
+
+    // Add preset names for easier UI display
+    const presetsWithNames = Object.keys(maxTokensConfig.presets).map(presetId => ({
+      id: presetId,
+      name: SUMMARY_PRESETS[presetId]?.name || presetId,
+      maxTokens: maxTokensConfig.presets[presetId]
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        presets: presetsWithNames,
+        default: maxTokensConfig.default
+      }
+    });
+
+  } catch (error) {
+    console.error('Get preset max tokens error:', error);
+    res.status(500).json({
+      error: { message: error.message || 'Failed to get max tokens', status: 500 }
+    });
+  }
+});
+
+/**
+ * POST /api/admin/presets/max-tokens/update
+ * Update max tokens for a specific preset
+ */
+router.post('/presets/max-tokens/update', requireAuth, (req, res) => {
+  try {
+    const { presetId, maxTokens, adminUserId } = req.body;
+
+    if (!presetId) {
+      return res.status(400).json({
+        error: { message: 'Preset ID is required', status: 400 }
+      });
+    }
+
+    if (!maxTokens || typeof maxTokens !== 'number') {
+      return res.status(400).json({
+        error: { message: 'Max tokens must be a number', status: 400 }
+      });
+    }
+
+    updatePresetMaxTokens(presetId, maxTokens, adminUserId || 'admin');
+
+    res.json({
+      success: true,
+      data: {
+        presetId,
+        maxTokens,
+        message: `Max tokens for preset '${presetId}' updated to ${maxTokens}`
+      }
+    });
+
+  } catch (error) {
+    console.error('Update preset max tokens error:', error);
+    res.status(400).json({
+      error: { message: error.message || 'Failed to update max tokens', status: 400 }
+    });
+  }
+});
+
+/**
+ * POST /api/admin/presets/max-tokens/update-default
+ * Update default max tokens
+ */
+router.post('/presets/max-tokens/update-default', requireAuth, (req, res) => {
+  try {
+    const { maxTokens, adminUserId } = req.body;
+
+    if (!maxTokens || typeof maxTokens !== 'number') {
+      return res.status(400).json({
+        error: { message: 'Max tokens must be a number', status: 400 }
+      });
+    }
+
+    updateDefaultMaxTokens(maxTokens, adminUserId || 'admin');
+
+    res.json({
+      success: true,
+      data: {
+        maxTokens,
+        message: `Default max tokens updated to ${maxTokens}`
+      }
+    });
+
+  } catch (error) {
+    console.error('Update default max tokens error:', error);
+    res.status(400).json({
+      error: { message: error.message || 'Failed to update default max tokens', status: 400 }
+    });
+  }
+});
+
+/**
+ * POST /api/admin/presets/max-tokens/bulk-update
+ * Bulk update max tokens for multiple presets
+ */
+router.post('/presets/max-tokens/bulk-update', requireAuth, (req, res) => {
+  try {
+    const { presets, adminUserId } = req.body;
+
+    if (!presets || typeof presets !== 'object') {
+      return res.status(400).json({
+        error: { message: 'Presets object is required (presetId: maxTokens pairs)', status: 400 }
+      });
+    }
+
+    bulkUpdatePresetMaxTokens(presets, adminUserId || 'admin');
+
+    res.json({
+      success: true,
+      data: {
+        updatedCount: Object.keys(presets).length,
+        message: `Bulk updated max tokens for ${Object.keys(presets).length} presets`
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk update max tokens error:', error);
+    res.status(400).json({
+      error: { message: error.message || 'Failed to bulk update max tokens', status: 400 }
+    });
+  }
 });
 
 export default router;

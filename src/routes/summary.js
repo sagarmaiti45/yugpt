@@ -3,7 +3,7 @@ import { getTranscript as getTranscriptV1 } from '../services/transcriptService.
 import { getTranscript as getTranscriptV2 } from '../services/transcriptServiceV2.js';
 import { streamSummary, parseSSEStream } from '../services/openRouterService.js';
 import { SUMMARY_PRESETS, PRESET_CATEGORIES } from '../config/summaryPresets.js';
-import { getSelectedModel } from '../config/adminConfig.js';
+import { getSelectedModel, getAllPresetMaxTokens } from '../config/adminConfig.js';
 
 const router = express.Router();
 
@@ -28,6 +28,7 @@ router.get('/presets', (req, res) => {
 router.get('/config', (req, res) => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const selectedModel = getSelectedModel();
+  const presetMaxTokens = getAllPresetMaxTokens();
 
   if (!apiKey) {
     return res.status(500).json({
@@ -42,7 +43,8 @@ router.get('/config', (req, res) => {
       model: selectedModel,
       apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
       siteUrl: process.env.SITE_URL || 'https://yugpt.app',
-      siteName: process.env.SITE_NAME || 'YuGPT'
+      siteName: process.env.SITE_NAME || 'YuGPT',
+      presetMaxTokens: presetMaxTokens  // Include preset-specific max tokens
     }
   });
 });
