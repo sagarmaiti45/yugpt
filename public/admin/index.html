@@ -727,37 +727,134 @@
       font-size: 14px;
     }
 
+    /* Hamburger Menu */
+    .hamburger-menu {
+      display: none;
+      width: 40px;
+      height: 40px;
+      background: #f0f0f0;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s;
+      padding: 8px;
+    }
+
+    .hamburger-menu:hover {
+      background: rgba(255, 0, 0, 0.08);
+      border-color: rgba(255, 0, 0, 0.3);
+    }
+
+    .hamburger-line {
+      width: 24px;
+      height: 3px;
+      background: #666;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .hamburger-menu.active .hamburger-line:nth-child(1) {
+      transform: rotate(45deg) translateY(8px);
+      background: #ff0000;
+    }
+
+    .hamburger-menu.active .hamburger-line:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-menu.active .hamburger-line:nth-child(3) {
+      transform: rotate(-45deg) translateY(-8px);
+      background: #ff0000;
+    }
+
+    /* Mobile Overlay */
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 99;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .mobile-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
-      .sidebar {
-        width: 70px;
+      .hamburger-menu {
+        display: flex;
       }
 
-      .sidebar-logo-text,
-      .nav-item span,
-      .sidebar-footer {
-        display: none;
+      .sidebar {
+        position: fixed;
+        left: -280px;
+        transition: left 0.3s ease;
+        z-index: 100;
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar.mobile-open {
+        left: 0;
       }
 
       .main-content {
-        margin-left: 70px;
-        width: calc(100% - 70px);
+        margin-left: 0;
+        width: 100%;
+      }
+
+      .top-header {
+        padding: 16px 20px;
+      }
+
+      .header-title h2 {
+        font-size: 20px;
+      }
+
+      .header-title p {
+        font-size: 12px;
+      }
+
+      .current-model-badge {
+        display: none;
+      }
+
+      .content-area {
+        padding: 20px 16px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .card-title h3 {
+        font-size: 16px;
       }
 
       .models-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
       }
 
-      .top-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
+      .model-card {
+        padding: 16px;
       }
 
       .preset-token-card {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+        padding: 12px;
       }
 
       .preset-token-input-group {
@@ -766,6 +863,63 @@
 
       .preset-token-input {
         flex: 1;
+      }
+
+      .custom-input-group {
+        flex-direction: column;
+      }
+
+      .custom-input-group input {
+        width: 100%;
+      }
+
+      .custom-input-group button {
+        width: 100%;
+      }
+
+      textarea {
+        font-size: 12px !important;
+        min-height: 180px !important;
+      }
+
+      .secondary-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .top-header {
+        padding: 12px 16px;
+      }
+
+      .header-title h2 {
+        font-size: 18px;
+      }
+
+      .content-area {
+        padding: 16px 12px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .model-card {
+        padding: 12px;
+      }
+
+      .model-name {
+        font-size: 14px;
+      }
+
+      .model-description {
+        font-size: 12px;
+      }
+
+      .save-all-btn {
+        padding: 12px;
+        font-size: 14px;
       }
     }
   </style>
@@ -792,8 +946,11 @@
 
   <!-- Admin Panel -->
   <div class="admin-container" id="adminContainer">
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">
           <div class="sidebar-logo-text">
@@ -829,9 +986,16 @@
     <div class="main-content">
       <!-- Top Header -->
       <div class="top-header">
-        <div class="header-title">
-          <h2 id="headerTitle">AI Model Management</h2>
-          <p id="headerSubtitle">Configure AI models for all users</p>
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+          <button class="hamburger-menu" id="hamburgerMenu" onclick="toggleMobileMenu()">
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+          </button>
+          <div class="header-title">
+            <h2 id="headerTitle">AI Model Management</h2>
+            <p id="headerSubtitle">Configure AI models for all users</p>
+          </div>
         </div>
         <div class="header-actions">
           <div class="current-model-badge">
@@ -1134,10 +1298,34 @@
       document.getElementById('loginError').innerHTML = '';
     }
 
+    // Mobile Menu Functions
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobileOverlay');
+      const hamburger = document.getElementById('hamburgerMenu');
+
+      sidebar.classList.toggle('mobile-open');
+      overlay.classList.toggle('active');
+      hamburger.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobileOverlay');
+      const hamburger = document.getElementById('hamburgerMenu');
+
+      sidebar.classList.remove('mobile-open');
+      overlay.classList.remove('active');
+      hamburger.classList.remove('active');
+    }
+
     // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
       item.addEventListener('click', () => {
         const section = item.dataset.section;
+
+        // Close mobile menu when navigating
+        closeMobileMenu();
 
         // Update nav active state
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
