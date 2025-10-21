@@ -783,6 +783,10 @@
           <span class="nav-icon">📏</span>
           <span>Max Tokens</span>
         </div>
+        <div class="nav-item" data-section="prompts">
+          <span class="nav-icon">💬</span>
+          <span>Prompt Management</span>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -899,6 +903,29 @@
               </div>
               <div id="presetsMaxTokensList"></div>
               <button onclick="saveAllMaxTokens()" class="save-all-btn">💾 Save All Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prompt Management Section -->
+        <div class="content-section" id="promptsSection">
+          <div class="loading" id="promptsLoading">
+            <div class="spinner"></div>
+            <p>Loading prompts...</p>
+          </div>
+
+          <div id="promptsContainer" style="display: none;">
+            <!-- System Prompts List -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">
+                  <h3>System Prompts</h3>
+                  <p>Manage all system prompts used throughout the application</p>
+                </div>
+              </div>
+              <div id="promptsList"></div>
+              <button onclick="saveAllPrompts()" class="save-all-btn">💾 Save All Prompts</button>
             </div>
           </div>
         </div>
@@ -1085,6 +1112,9 @@
         } else if (section === 'tokens') {
           document.getElementById('headerTitle').textContent = 'Max Tokens Configuration';
           document.getElementById('headerSubtitle').textContent = 'Control output length for each preset';
+        } else if (section === 'prompts') {
+          document.getElementById('headerTitle').textContent = 'Prompt Management';
+          document.getElementById('headerSubtitle').textContent = 'Customize system prompts and templates';
         }
       });
     });
@@ -1261,6 +1291,146 @@
         console.error('Error:', error);
         showMessage('❌ Failed to save changes', 'error');
       }
+    }
+
+    // Prompt Management
+    async function loadPrompts() {
+      try {
+        const response = await fetch('/api/admin/prompts', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load prompts');
+
+        const data = await response.json();
+        const prompts = data.data.prompts;
+
+        const promptsList = document.getElementById('promptsList');
+        promptsList.innerHTML = '';
+
+        prompts.forEach(prompt => {
+          const promptCard = document.createElement('div');
+          promptCard.className = 'preset-item';
+          promptCard.style.marginBottom = '20px';
+          promptCard.style.border = '1px solid rgba(255, 0, 0, 0.2)';
+          promptCard.style.borderRadius = '8px';
+          promptCard.style.padding = '16px';
+
+          promptCard.innerHTML = `
+            <div style="margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div style="flex: 1;">
+                  <strong style="font-size: 16px; color: #ff0000;">${prompt.name}</strong>
+                  <div style="font-size: 12px; color: #888; font-family: monospace; margin-top: 4px;">Key: ${prompt.key}</div>
+                  <div style="font-size: 13px; color: #aaa; margin-top: 6px;">${prompt.description}</div>
+                </div>
+                <button onclick="resetPrompt('${prompt.key}')" class="secondary-btn" style="margin-left: 12px; padding: 6px 12px; font-size: 12px;">
+                  🔄 Reset
+                </button>
+              </div>
+            </div>
+            <div style="position: relative;">
+              <textarea
+                id="prompt-${prompt.key}"
+                class="prompt-input"
+                style="width: 100%; min-height: 200px; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.5; resize: vertical;"
+                placeholder="Enter prompt content..."
+              >${prompt.content}</textarea>
+              <div style="font-size: 11px; color: #666; margin-top: 6px; display: flex; justify-content: space-between;">
+                <span>Characters: ${prompt.length}</span>
+                <span>Variables: {{VARIABLE_NAME}}</span>
+              </div>
+            </div>
+          `;
+
+          promptsList.appendChild(promptCard);
+        });
+
+        document.getElementById('promptsLoading').style.display = 'none';
+        document.getElementById('promptsContainer').style.display = 'block';
+
+      } catch (error) {
+        console.error('Error loading prompts:', error);
+        showMessage('❌ Failed to load prompts', 'error');
+        document.getElementById('promptsLoading').style.display = 'none';
+      }
+    }
+
+    async function saveAllPrompts() {
+      try {
+        showMessage('Saving all prompts...', 'info');
+
+        const prompts = {};
+        const textareas = document.querySelectorAll('.prompt-input');
+
+        let hasError = false;
+        textareas.forEach(textarea => {
+          const promptKey = textarea.id.replace('prompt-', '');
+          const content = textarea.value.trim();
+
+          if (!content) {
+            showMessage(`❌ Prompt '${promptKey}' cannot be empty`, 'error');
+            hasError = true;
+            return;
+          }
+
+          prompts[promptKey] = content;
+        });
+
+        if (hasError) return;
+
+        const response = await fetch('/api/admin/prompts/bulk-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ prompts })
+        });
+
+        if (!response.ok) throw new Error('Failed to save prompts');
+
+        showMessage('✅ All prompts saved successfully!', 'success');
+
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('❌ Failed to save prompts', 'error');
+      }
+    }
+
+    async function resetPrompt(promptKey) {
+      if (!confirm(`Are you sure you want to reset '${promptKey}' to its default value?`)) {
+        return;
+      }
+
+      try {
+        showMessage(`Resetting ${promptKey}...`, 'info');
+
+        const response = await fetch('/api/admin/prompts/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ promptKey })
+        });
+
+        if (!response.ok) throw new Error('Failed to reset prompt');
+
+        showMessage('✅ Prompt reset successfully!', 'success');
+
+        // Reload prompts to show the reset value
+        await loadPrompts();
+
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('❌ Failed to reset prompt', 'error');
+      }
+    }
+
+    // Load prompts when admin panel loads
+    if (savedToken) {
+      loadPrompts();
     }
   </script>
 </body>

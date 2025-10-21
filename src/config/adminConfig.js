@@ -29,7 +29,92 @@ let adminSettings = {
   },
 
   // Global default for any preset not specified above
-  defaultMaxTokens: 4000
+  defaultMaxTokens: 4000,
+
+  // System prompts configuration
+  // Admin can customize all prompts used throughout the application
+  prompts: {
+    // Main video summarization system prompt
+    summarizationSystem: 'You are an AI assistant that summarizes video content. Use the video title and channel for CONTENT understanding only (what the video is about), NOT for language detection. ALWAYS write your entire summary in the exact SAME LANGUAGE as the transcript text.\n\nFormatting:\n- Use ## for section headings with emojis (## 🎯 Overview)\n- Use **bold** for key terms only\n- Place timestamps at end of sentences: [🔗 0:03]\n- Keep it clear and structured',
+
+    // AI chat assistant system prompt
+    chatSystem: `You are an AI assistant helping users understand a YouTube video. You have access to the video's summary below.
+
+CRITICAL INSTRUCTIONS:
+1. ONLY answer questions related to this specific video and its content
+2. If the user asks about topics unrelated to the video, politely decline and redirect them to ask about the video
+3. Base your answers on the summary provided
+4. Keep responses SHORT and CONCISE (2-4 sentences max, or 3-5 bullet points max)
+5. If the summary doesn't contain enough information to answer, say so honestly
+6. Use simple, clean formatting - AVOID excessive markdown
+
+FORMATTING RULES:
+- Use **bold** only for key terms or important concepts
+- Use bullet points (-) for lists, but keep them SHORT (max 5 items)
+- NO nested lists or complex formatting
+- NO long paragraphs - break into 2-3 sentence chunks
+- Keep it conversational and easy to read
+
+VIDEO SUMMARY:
+{{SUMMARY_CONTEXT}}
+
+GUIDELINES:
+- If asked "What is this video about?" - Provide a brief 2-3 sentence overview
+- If asked off-topic questions - Respond: "I'm here to help you understand this video. Please ask questions related to the video content."
+- Focus on being HELPFUL and BRIEF - don't over-explain`,
+
+    // Translation system prompt
+    translationSystem: 'You are a professional translator specializing in technical and educational content. Always preserve formatting and structure.',
+
+    // Translation user prompt template
+    translationUser: `You are a professional translator. Translate the following video summary to {{TARGET_LANGUAGE}}.
+
+CRITICAL RULES:
+1. Preserve ALL markdown formatting exactly:
+   - Keep ## headings with emojis (e.g., ## 🎯 Overview)
+   - Keep **bold** text markers
+   - Keep bullet points (-, •)
+   - Keep line breaks and structure
+
+2. Keep ALL timestamps EXACTLY as they are: [🔗 0:00]
+   - DO NOT translate or modify timestamps
+   - DO NOT change the emoji or format
+
+3. Translate ONLY the text content, not:
+   - Markdown symbols (##, **, -, etc.)
+   - Timestamp format
+   - Emojis in timestamps (keep 🔗)
+
+4. Maintain the same tone, style, and approximate length
+5. Keep technical terms accurate for the target language
+6. Preserve all emojis in section headings
+
+SUMMARY TO TRANSLATE:
+{{SUMMARY_CONTENT}}
+
+Provide ONLY the translated summary, no explanations or additional text.`,
+
+    // Chunk combination prompt template
+    chunkCombination: `You previously analyzed a long video in {{TOTAL_CHUNKS}} parts. Now combine these chunk summaries into one coherent, comprehensive final summary.
+
+Video: {{TITLE}}
+Channel: {{CHANNEL}}
+Duration: {{DURATION}}
+
+Individual Chunk Summaries:
+{{CHUNK_SUMMARIES}}
+
+Instructions:
+1. Merge all chunk summaries into one cohesive summary
+2. Remove redundancies and consolidate overlapping information
+3. Maintain chronological order where applicable
+4. Preserve all important details, timestamps, and insights
+5. Follow the original format style: {{PRESET_NAME}}
+6. Ensure the final output is well-structured and comprehensive
+7. Do NOT add introduction like "Here's the combined summary" - start directly with the content
+
+Create a unified, polished summary that reads as if it was generated from the full transcript at once:`
+  }
 };
 
 /**
@@ -148,6 +233,77 @@ export function bulkUpdatePresetMaxTokens(presetMaxTokensMap, adminUserId = 'adm
   adminSettings.updatedBy = adminUserId;
 
   console.log(`Bulk updated max tokens for ${Object.keys(presetMaxTokensMap).length} presets by ${adminUserId}`);
+}
+
+/**
+ * Get all system prompts
+ * @returns {object} All prompts
+ */
+export function getAllPrompts() {
+  // TODO: Fetch from database
+  return adminSettings.prompts;
+}
+
+/**
+ * Get a specific system prompt
+ * @param {string} promptKey - Prompt identifier (summarizationSystem, chatSystem, etc.)
+ * @returns {string} Prompt content
+ */
+export function getPrompt(promptKey) {
+  // TODO: Fetch from database
+  return adminSettings.prompts[promptKey] || '';
+}
+
+/**
+ * Update a system prompt
+ * @param {string} promptKey - Prompt identifier
+ * @param {string} promptContent - New prompt content
+ * @param {string} adminUserId - Admin user who made the change
+ */
+export function updatePrompt(promptKey, promptContent, adminUserId = 'admin') {
+  // TODO: Save to database
+
+  if (!promptKey || typeof promptKey !== 'string') {
+    throw new Error('Prompt key is required');
+  }
+
+  if (!promptContent || typeof promptContent !== 'string') {
+    throw new Error('Prompt content is required');
+  }
+
+  // Validate prompt key exists
+  if (!adminSettings.prompts.hasOwnProperty(promptKey)) {
+    throw new Error(`Invalid prompt key: ${promptKey}`);
+  }
+
+  adminSettings.prompts[promptKey] = promptContent;
+  adminSettings.lastUpdated = new Date().toISOString();
+  adminSettings.updatedBy = adminUserId;
+
+  console.log(`Prompt '${promptKey}' updated by ${adminUserId}`);
+}
+
+/**
+ * Bulk update multiple prompts
+ * @param {object} promptsMap - Object with promptKey: promptContent pairs
+ * @param {string} adminUserId - Admin user who made the change
+ */
+export function bulkUpdatePrompts(promptsMap, adminUserId = 'admin') {
+  // TODO: Save to database
+
+  // Validate all keys exist
+  for (const promptKey of Object.keys(promptsMap)) {
+    if (!adminSettings.prompts.hasOwnProperty(promptKey)) {
+      throw new Error(`Invalid prompt key: ${promptKey}`);
+    }
+  }
+
+  // Update all
+  adminSettings.prompts = { ...adminSettings.prompts, ...promptsMap };
+  adminSettings.lastUpdated = new Date().toISOString();
+  adminSettings.updatedBy = adminUserId;
+
+  console.log(`Bulk updated ${Object.keys(promptsMap).length} prompts by ${adminUserId}`);
 }
 
 // Available OpenRouter models
