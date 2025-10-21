@@ -673,6 +673,24 @@
       box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
     }
 
+    .secondary-btn {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255, 0, 0, 0.2);
+      border-color: rgba(255, 0, 0, 0.5);
+      transform: translateY(-1px);
+    }
+
     /* Loading */
     .loading {
       text-align: center;
@@ -921,11 +939,24 @@
                 <div class="card-icon">🤖</div>
                 <div class="card-title">
                   <h3>System Prompts</h3>
-                  <p>Manage all system prompts used throughout the application</p>
+                  <p>Core prompts that control AI behavior (summarization, chat, translation)</p>
                 </div>
               </div>
               <div id="promptsList"></div>
-              <button onclick="saveAllPrompts()" class="save-all-btn">💾 Save All Prompts</button>
+              <button onclick="saveAllPrompts()" class="save-all-btn">💾 Save All System Prompts</button>
+            </div>
+
+            <!-- Preset Template Prompts List -->
+            <div class="card" style="margin-top: 24px;">
+              <div class="card-header">
+                <div class="card-icon">📝</div>
+                <div class="card-title">
+                  <h3>Preset Template Prompts</h3>
+                  <p>Customize the 13 preset templates for different summary types</p>
+                </div>
+              </div>
+              <div id="presetPromptsList"></div>
+              <button onclick="saveAllPresetPrompts()" class="save-all-btn">💾 Save All Preset Prompts</button>
             </div>
           </div>
         </div>
@@ -1293,6 +1324,26 @@
       }
     }
 
+    // Helper function to get variables for each prompt type
+    function getPromptVariables(promptKey, presetId = null) {
+      const systemPromptVars = {
+        'summarizationSystem': 'None',
+        'chatSystem': '{{SUMMARY_CONTEXT}}',
+        'translationSystem': 'None',
+        'translationUser': '{{TARGET_LANGUAGE}}, {{SUMMARY_CONTENT}}',
+        'chunkCombination': '{{TOTAL_CHUNKS}}, {{TITLE}}, {{CHANNEL}}, {{DURATION}}, {{CHUNK_SUMMARIES}}, {{PRESET_NAME}}'
+      };
+
+      const presetVars = '{{TITLE}}, {{CHANNEL}}, {{URL}}, {{TRANSCRIPT}}, {{DURATION}}, {{CHUNK_NUMBER}}, {{TOTAL_CHUNKS}}';
+
+      if (promptKey) {
+        return systemPromptVars[promptKey] || 'Unknown';
+      } else if (presetId) {
+        return presetVars;
+      }
+      return 'Unknown';
+    }
+
     // Prompt Management
     async function loadPrompts() {
       try {
@@ -1309,6 +1360,7 @@
         promptsList.innerHTML = '';
 
         prompts.forEach(prompt => {
+          const variables = getPromptVariables(prompt.key);
           const promptCard = document.createElement('div');
           promptCard.className = 'preset-item';
           promptCard.style.marginBottom = '20px';
@@ -1324,7 +1376,7 @@
                   <div style="font-size: 12px; color: #888; font-family: monospace; margin-top: 4px;">Key: ${prompt.key}</div>
                   <div style="font-size: 13px; color: #aaa; margin-top: 6px;">${prompt.description}</div>
                 </div>
-                <button onclick="resetPrompt('${prompt.key}')" class="secondary-btn" style="margin-left: 12px; padding: 6px 12px; font-size: 12px;">
+                <button onclick="resetPrompt('${prompt.key}')" class="secondary-btn">
                   🔄 Reset
                 </button>
               </div>
@@ -1338,7 +1390,7 @@
               >${prompt.content}</textarea>
               <div style="font-size: 11px; color: #666; margin-top: 6px; display: flex; justify-content: space-between;">
                 <span>Characters: ${prompt.length}</span>
-                <span>Variables: {{VARIABLE_NAME}}</span>
+                <span>Variables: ${variables}</span>
               </div>
             </div>
           `;
@@ -1353,6 +1405,99 @@
         console.error('Error loading prompts:', error);
         showMessage('❌ Failed to load prompts', 'error');
         document.getElementById('promptsLoading').style.display = 'none';
+      }
+    }
+
+    // Load preset template prompts
+    async function loadPresetPrompts() {
+      try {
+        const response = await fetch('/api/admin/preset-prompts', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load preset prompts');
+
+        const data = await response.json();
+        const presets = data.data.presets;
+
+        const presetPromptsList = document.getElementById('presetPromptsList');
+        presetPromptsList.innerHTML = '';
+
+        // Group by category
+        const categories = {
+          'general': [],
+          'students': [],
+          'professionals': [],
+          'creators': []
+        };
+
+        presets.forEach(preset => {
+          const category = preset.category || 'general';
+          if (categories[category]) {
+            categories[category].push(preset);
+          }
+        });
+
+        // Render by category
+        const categoryNames = {
+          'general': 'General',
+          'students': 'For Students/Researchers',
+          'professionals': 'For Professionals',
+          'creators': 'For Content Creators'
+        };
+
+        Object.keys(categories).forEach(cat => {
+          if (categories[cat].length > 0) {
+            const categoryHeader = document.createElement('div');
+            categoryHeader.style.marginTop = '20px';
+            categoryHeader.style.marginBottom = '12px';
+            categoryHeader.innerHTML = `<h4 style="color: #ff0000; font-size: 15px;">📁 ${categoryNames[cat]}</h4>`;
+            presetPromptsList.appendChild(categoryHeader);
+
+            categories[cat].forEach(preset => {
+              const variables = getPromptVariables(null, preset.id);
+              const promptCard = document.createElement('div');
+              promptCard.className = 'preset-item';
+              promptCard.style.marginBottom = '20px';
+              promptCard.style.border = '1px solid rgba(255, 0, 0, 0.2)';
+              promptCard.style.borderRadius = '8px';
+              promptCard.style.padding = '16px';
+
+              promptCard.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <strong style="font-size: 16px; color: #ff0000;">${preset.name}</strong>
+                      <div style="font-size: 12px; color: #888; font-family: monospace; margin-top: 4px;">ID: ${preset.id}</div>
+                      <div style="font-size: 13px; color: #aaa; margin-top: 6px;">${preset.description}</div>
+                    </div>
+                    <button onclick="resetPresetPrompt('${preset.id}')" class="secondary-btn">
+                      🔄 Reset
+                    </button>
+                  </div>
+                </div>
+                <div style="position: relative;">
+                  <textarea
+                    id="preset-prompt-${preset.id}"
+                    class="preset-prompt-input"
+                    style="width: 100%; min-height: 250px; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.5; resize: vertical;"
+                    placeholder="Enter preset prompt template..."
+                  >${preset.content}</textarea>
+                  <div style="font-size: 11px; color: #666; margin-top: 6px; display: flex; justify-content: space-between;">
+                    <span>Characters: ${preset.length}</span>
+                    <span>Variables: ${variables}</span>
+                  </div>
+                </div>
+              `;
+
+              presetPromptsList.appendChild(promptCard);
+            });
+          }
+        });
+
+      } catch (error) {
+        console.error('Error loading preset prompts:', error);
+        showMessage('❌ Failed to load preset prompts', 'error');
       }
     }
 
@@ -1428,9 +1573,82 @@
       }
     }
 
+    async function saveAllPresetPrompts() {
+      try {
+        showMessage('Saving all preset prompts...', 'info');
+
+        const presets = {};
+        const textareas = document.querySelectorAll('.preset-prompt-input');
+
+        let hasError = false;
+        textareas.forEach(textarea => {
+          const presetId = textarea.id.replace('preset-prompt-', '');
+          const content = textarea.value.trim();
+
+          if (!content) {
+            showMessage(`❌ Preset prompt '${presetId}' cannot be empty`, 'error');
+            hasError = true;
+            return;
+          }
+
+          presets[presetId] = content;
+        });
+
+        if (hasError) return;
+
+        const response = await fetch('/api/admin/preset-prompts/bulk-update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ presets })
+        });
+
+        if (!response.ok) throw new Error('Failed to save preset prompts');
+
+        showMessage('✅ All preset prompts saved successfully!', 'success');
+
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('❌ Failed to save preset prompts', 'error');
+      }
+    }
+
+    async function resetPresetPrompt(presetId) {
+      if (!confirm(`Are you sure you want to reset '${presetId}' to its default value?`)) {
+        return;
+      }
+
+      try {
+        showMessage(`Resetting ${presetId}...`, 'info');
+
+        const response = await fetch('/api/admin/preset-prompts/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ presetId })
+        });
+
+        if (!response.ok) throw new Error('Failed to reset preset prompt');
+
+        showMessage('✅ Preset prompt reset successfully!', 'success');
+
+        // Reload preset prompts to show the reset value
+        await loadPresetPrompts();
+
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('❌ Failed to reset preset prompt', 'error');
+      }
+    }
+
     // Load prompts when admin panel loads
     if (savedToken) {
       loadPrompts();
+      loadPresetPrompts();
     }
   </script>
 </body>

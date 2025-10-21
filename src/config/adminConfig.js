@@ -3,6 +3,14 @@
  * This will be replaced with database queries when admin panel is implemented
  */
 
+import { SUMMARY_PRESETS } from './summaryPresets.js';
+
+// Initialize preset prompts from SUMMARY_PRESETS
+const initialPresetPrompts = {};
+Object.keys(SUMMARY_PRESETS).forEach(key => {
+  initialPresetPrompts[key] = SUMMARY_PRESETS[key].prompt;
+});
+
 // Temporary: In-memory storage for admin settings
 // TODO: Replace with database (MongoDB/PostgreSQL) when admin panel is ready
 let adminSettings = {
@@ -114,7 +122,11 @@ Instructions:
 7. Do NOT add introduction like "Here's the combined summary" - start directly with the content
 
 Create a unified, polished summary that reads as if it was generated from the full transcript at once:`
-  }
+  },
+
+  // Preset template prompts (13 presets)
+  // Admin can customize the prompt for each summary preset
+  presetPrompts: initialPresetPrompts
 };
 
 /**
@@ -304,6 +316,77 @@ export function bulkUpdatePrompts(promptsMap, adminUserId = 'admin') {
   adminSettings.updatedBy = adminUserId;
 
   console.log(`Bulk updated ${Object.keys(promptsMap).length} prompts by ${adminUserId}`);
+}
+
+/**
+ * Get all preset prompts
+ * @returns {object} All preset prompts
+ */
+export function getAllPresetPrompts() {
+  // TODO: Fetch from database
+  return adminSettings.presetPrompts;
+}
+
+/**
+ * Get a specific preset prompt
+ * @param {string} presetId - Preset identifier (e.g., 'general-summary')
+ * @returns {string} Preset prompt content
+ */
+export function getPresetPrompt(presetId) {
+  // TODO: Fetch from database
+  return adminSettings.presetPrompts[presetId] || '';
+}
+
+/**
+ * Update a preset prompt
+ * @param {string} presetId - Preset identifier
+ * @param {string} promptContent - New prompt content
+ * @param {string} adminUserId - Admin user who made the change
+ */
+export function updatePresetPrompt(presetId, promptContent, adminUserId = 'admin') {
+  // TODO: Save to database
+
+  if (!presetId || typeof presetId !== 'string') {
+    throw new Error('Preset ID is required');
+  }
+
+  if (!promptContent || typeof promptContent !== 'string') {
+    throw new Error('Prompt content is required');
+  }
+
+  // Validate preset ID exists
+  if (!adminSettings.presetPrompts.hasOwnProperty(presetId)) {
+    throw new Error(`Invalid preset ID: ${presetId}`);
+  }
+
+  adminSettings.presetPrompts[presetId] = promptContent;
+  adminSettings.lastUpdated = new Date().toISOString();
+  adminSettings.updatedBy = adminUserId;
+
+  console.log(`Preset prompt '${presetId}' updated by ${adminUserId}`);
+}
+
+/**
+ * Bulk update multiple preset prompts
+ * @param {object} presetsMap - Object with presetId: promptContent pairs
+ * @param {string} adminUserId - Admin user who made the change
+ */
+export function bulkUpdatePresetPrompts(presetsMap, adminUserId = 'admin') {
+  // TODO: Save to database
+
+  // Validate all preset IDs exist
+  for (const presetId of Object.keys(presetsMap)) {
+    if (!adminSettings.presetPrompts.hasOwnProperty(presetId)) {
+      throw new Error(`Invalid preset ID: ${presetId}`);
+    }
+  }
+
+  // Update all
+  adminSettings.presetPrompts = { ...adminSettings.presetPrompts, ...presetsMap };
+  adminSettings.lastUpdated = new Date().toISOString();
+  adminSettings.updatedBy = adminUserId;
+
+  console.log(`Bulk updated ${Object.keys(presetsMap).length} preset prompts by ${adminUserId}`);
 }
 
 // Available OpenRouter models

@@ -12,7 +12,11 @@ import {
   getAllPrompts,
   getPrompt,
   updatePrompt,
-  bulkUpdatePrompts
+  bulkUpdatePrompts,
+  getAllPresetPrompts,
+  getPresetPrompt,
+  updatePresetPrompt,
+  bulkUpdatePresetPrompts as bulkUpdatePresetPromptsConfig
 } from '../config/adminConfig.js';
 import { SUMMARY_PRESETS } from '../config/summaryPresets.js';
 
@@ -516,5 +520,181 @@ Create a unified, polished summary that reads as if it was generated from the fu
   };
   return defaults[key] || null;
 }
+
+/**
+ * GET /api/admin/preset-prompts
+ * Get all preset template prompts
+ */
+router.get('/preset-prompts', requireAuth, (req, res) => {
+  try {
+    const presetPrompts = getAllPresetPrompts();
+
+    // Add metadata for each preset prompt
+    const promptsWithMetadata = Object.keys(presetPrompts).map(presetId => ({
+      id: presetId,
+      content: presetPrompts[presetId],
+      name: SUMMARY_PRESETS[presetId]?.name || presetId,
+      description: SUMMARY_PRESETS[presetId]?.description || '',
+      category: SUMMARY_PRESETS[presetId]?.category || 'general',
+      length: presetPrompts[presetId].length
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        presets: promptsWithMetadata,
+        count: promptsWithMetadata.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Get preset prompts error:', error);
+    res.status(500).json({
+      error: { message: error.message || 'Failed to get preset prompts', status: 500 }
+    });
+  }
+});
+
+/**
+ * GET /api/admin/preset-prompts/:presetId
+ * Get a specific preset template prompt
+ */
+router.get('/preset-prompts/:presetId', requireAuth, (req, res) => {
+  try {
+    const { presetId } = req.params;
+    const promptContent = getPresetPrompt(presetId);
+
+    if (!promptContent) {
+      return res.status(404).json({
+        error: { message: `Preset '${presetId}' not found`, status: 404 }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: presetId,
+        content: promptContent,
+        name: SUMMARY_PRESETS[presetId]?.name || presetId,
+        description: SUMMARY_PRESETS[presetId]?.description || ''
+      }
+    });
+
+  } catch (error) {
+    console.error('Get preset prompt error:', error);
+    res.status(500).json({
+      error: { message: error.message || 'Failed to get preset prompt', status: 500 }
+    });
+  }
+});
+
+/**
+ * POST /api/admin/preset-prompts/update
+ * Update a specific preset template prompt
+ */
+router.post('/preset-prompts/update', requireAuth, (req, res) => {
+  try {
+    const { presetId, promptContent, adminUserId } = req.body;
+
+    if (!presetId) {
+      return res.status(400).json({
+        error: { message: 'Preset ID is required', status: 400 }
+      });
+    }
+
+    if (!promptContent || typeof promptContent !== 'string') {
+      return res.status(400).json({
+        error: { message: 'Prompt content must be a string', status: 400 }
+      });
+    }
+
+    updatePresetPrompt(presetId, promptContent, adminUserId || 'admin');
+
+    res.json({
+      success: true,
+      data: {
+        presetId,
+        message: `Preset prompt '${presetId}' updated successfully`
+      }
+    });
+
+  } catch (error) {
+    console.error('Update preset prompt error:', error);
+    res.status(400).json({
+      error: { message: error.message || 'Failed to update preset prompt', status: 400 }
+    });
+  }
+});
+
+/**
+ * POST /api/admin/preset-prompts/bulk-update
+ * Bulk update multiple preset template prompts
+ */
+router.post('/preset-prompts/bulk-update', requireAuth, (req, res) => {
+  try {
+    const { presets, adminUserId } = req.body;
+
+    if (!presets || typeof presets !== 'object') {
+      return res.status(400).json({
+        error: { message: 'Presets object is required (presetId: promptContent pairs)', status: 400 }
+      });
+    }
+
+    bulkUpdatePresetPromptsConfig(presets, adminUserId || 'admin');
+
+    res.json({
+      success: true,
+      data: {
+        updatedCount: Object.keys(presets).length,
+        message: `Bulk updated ${Object.keys(presets).length} preset prompts`
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk update preset prompts error:', error);
+    res.status(400).json({
+      error: { message: error.message || 'Failed to bulk update preset prompts', status: 400 }
+    });
+  }
+});
+
+/**
+ * POST /api/admin/preset-prompts/reset
+ * Reset a preset prompt to its default value from summaryPresets.js
+ */
+router.post('/preset-prompts/reset', requireAuth, (req, res) => {
+  try {
+    const { presetId, adminUserId } = req.body;
+
+    if (!presetId) {
+      return res.status(400).json({
+        error: { message: 'Preset ID is required', status: 400 }
+      });
+    }
+
+    const defaultContent = SUMMARY_PRESETS[presetId]?.prompt;
+    if (!defaultContent) {
+      return res.status(404).json({
+        error: { message: `No default found for preset '${presetId}'`, status: 404 }
+      });
+    }
+
+    updatePresetPrompt(presetId, defaultContent, adminUserId || 'admin');
+
+    res.json({
+      success: true,
+      data: {
+        presetId,
+        message: `Preset prompt '${presetId}' reset to default`
+      }
+    });
+
+  } catch (error) {
+    console.error('Reset preset prompt error:', error);
+    res.status(400).json({
+      error: { message: error.message || 'Failed to reset preset prompt', status: 400 }
+    });
+  }
+});
 
 export default router;
