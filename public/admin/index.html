@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YuGPT Admin Panel - Model Selection</title>
+  <title>YuGPT Admin Panel</title>
   <style>
     * {
       margin: 0;
@@ -13,366 +13,531 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #0a0a0a;
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    /* Login Screen */
+    .login-container {
       min-height: 100vh;
-      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #000000 0%, #1a0000 50%, #000000 100%);
+      position: relative;
+      overflow: hidden;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 0, 0, 0.1) 0%, transparent 70%);
+      animation: pulse 15s ease-in-out infinite;
     }
 
-    .header {
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .login-box {
+      background: rgba(20, 20, 20, 0.95);
+      border: 2px solid rgba(255, 0, 0, 0.3);
+      border-radius: 20px;
+      padding: 50px 40px;
+      width: 100%;
+      max-width: 420px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 60px rgba(255, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+
+    .login-header {
       text-align: center;
-      color: white;
       margin-bottom: 40px;
     }
 
-    .header h1 {
-      font-size: 36px;
+    .login-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 20px;
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+    }
+
+    .login-title {
+      font-size: 28px;
       font-weight: 700;
+      background: linear-gradient(135deg, #ff0000 0%, #ffffff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
     }
 
-    .header-icon {
-      width: 40px;
-      height: 40px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
-
-    .header p {
-      font-size: 16px;
-      opacity: 0.9;
-    }
-
-    .login-card,
-    .admin-panel {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-      padding: 40px;
-    }
-
-    .login-card {
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    .login-card h2 {
-      font-size: 24px;
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 24px;
-      text-align: center;
+    .login-subtitle {
+      font-size: 14px;
+      color: #888;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .form-group label {
       display: block;
       font-size: 14px;
       font-weight: 600;
-      color: #4a5568;
-      margin-bottom: 8px;
+      color: #ffffff;
+      margin-bottom: 10px;
     }
 
     .form-group input {
       width: 100%;
-      padding: 12px 16px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 14px;
-      transition: border-color 0.2s;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 15px;
+      color: #ffffff;
+      transition: all 0.3s;
     }
 
     .form-group input:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #ff0000;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
     }
 
-    .btn {
+    .form-group input::placeholder {
+      color: #666;
+    }
+
+    .btn-login {
       width: 100%;
-      padding: 12px 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 14px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
+      border-radius: 10px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: all 0.3s;
+      box-shadow: 0 5px 20px rgba(255, 0, 0, 0.3);
     }
 
-    .btn:hover {
-      opacity: 0.9;
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
     }
 
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    .btn-login:active {
+      transform: translateY(0);
     }
 
     .error-message {
-      background: #fee;
-      color: #c53030;
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      color: #ff4444;
       padding: 12px;
       border-radius: 8px;
       font-size: 14px;
-      margin-bottom: 16px;
-      border-left: 4px solid #f56565;
+      margin-bottom: 20px;
     }
 
-    .success-message {
-      background: #e6ffed;
-      color: #22543d;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      margin-bottom: 16px;
-      border-left: 4px solid #48bb78;
-    }
-
-    .admin-panel {
+    /* Admin Panel Layout */
+    .admin-container {
       display: none;
+      min-height: 100vh;
     }
 
-    .admin-panel.active {
-      display: block;
+    .admin-container.active {
+      display: flex;
     }
 
-    .current-model {
-      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-      padding: 20px;
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #0a0a0a 0%, #1a0505 100%);
+      border-right: 1px solid rgba(255, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      left: 0;
+      top: 0;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 30px 20px;
+      border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-logo-icon {
+      width: 45px;
+      height: 45px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
       border-radius: 12px;
-      border-left: 4px solid #667eea;
-      margin-bottom: 32px;
-    }
-
-    .current-model h3 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #4a5568;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .current-model-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .current-model-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #2d3748;
-    }
-
-    .current-model-badge {
-      background: #667eea;
-      color: white;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .model-section {
-      margin-bottom: 32px;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .section-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 24px;
     }
 
-    .section-icon.premium {
-      background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    .sidebar-logo-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff0000 0%, #ffffff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .section-icon.optimized {
-      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    .sidebar-logo-text p {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
     }
 
-    .section-icon.free {
-      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    .sidebar-nav {
+      flex: 1;
+      padding: 20px 0;
+      overflow-y: auto;
     }
 
-    .section-icon.custom {
-      background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+    .sidebar-nav::-webkit-scrollbar {
+      width: 4px;
     }
 
-    .section-title {
+    .sidebar-nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: rgba(255, 0, 0, 0.3);
+      border-radius: 2px;
+    }
+
+    .nav-item {
+      padding: 14px 20px;
+      margin: 4px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #888;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 0, 0, 0.1);
+      color: #ffffff;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(255, 0, 0, 0.2) 0%, rgba(255, 0, 0, 0.1) 100%);
+      color: #ff0000;
+      border-left: 3px solid #ff0000;
+    }
+
+    .nav-icon {
+      font-size: 20px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 20px;
+      border-top: 1px solid rgba(255, 0, 0, 0.2);
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      color: #ff4444;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 0, 0, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Main Content */
+    .main-content {
+      margin-left: 280px;
+      width: calc(100% - 280px);
+      min-height: 100vh;
+    }
+
+    /* Top Header */
+    .top-header {
+      background: rgba(15, 15, 15, 0.95);
+      border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-title h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .header-title p {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .current-model-badge {
+      padding: 10px 20px;
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .badge-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ff0000;
+    }
+
+    /* Content Area */
+    .content-area {
+      padding: 30px;
+    }
+
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    .success-message {
+      background: rgba(0, 255, 0, 0.1);
+      border: 1px solid rgba(0, 255, 0, 0.3);
+      color: #00ff00;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(20, 20, 20, 0.8);
+      border: 1px solid rgba(255, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .card-title {
+      flex: 1;
+    }
+
+    .card-title h3 {
       font-size: 18px;
       font-weight: 600;
-      color: #2d3748;
+      color: #ffffff;
     }
 
-    .section-subtitle {
-      font-size: 12px;
-      color: #718096;
+    .card-title p {
+      font-size: 13px;
+      color: #666;
+      margin-top: 2px;
     }
 
+    /* Models Grid */
     .models-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
     }
 
     .model-card {
-      background: white;
-      border: 2px solid #e2e8f0;
+      background: rgba(30, 30, 30, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
-      padding: 16px;
+      padding: 20px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s;
       position: relative;
     }
 
     .model-card:hover {
-      border-color: #667eea;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+      border-color: rgba(255, 0, 0, 0.5);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2);
     }
 
     .model-card.selected {
-      border-color: #667eea;
-      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    }
-
-    .model-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 8px;
+      border-color: #ff0000;
+      background: rgba(255, 0, 0, 0.1);
     }
 
     .model-name {
       font-size: 16px;
       font-weight: 600;
-      color: #2d3748;
+      color: #ffffff;
+      margin-bottom: 4px;
     }
 
     .model-provider {
       font-size: 12px;
-      color: #718096;
-      margin-bottom: 8px;
+      color: #888;
+      margin-bottom: 12px;
     }
 
     .model-description {
       font-size: 13px;
-      color: #4a5568;
+      color: #aaa;
       line-height: 1.5;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .model-specs {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .spec-badge {
       font-size: 11px;
-      padding: 4px 8px;
+      padding: 5px 10px;
       border-radius: 6px;
       font-weight: 600;
-    }
-
-    .spec-badge.context {
-      background: #e6fffa;
-      color: #234e52;
-    }
-
-    .spec-badge.pricing {
-      background: #fef5e7;
-      color: #744210;
-    }
-
-    .spec-badge.free {
-      background: #e6ffed;
-      color: #22543d;
+      background: rgba(255, 255, 255, 0.05);
+      color: #aaa;
     }
 
     .select-btn {
       width: 100%;
-      padding: 8px 16px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 10px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
       color: white;
       border: none;
-      border-radius: 6px;
-      font-size: 13px;
+      border-radius: 8px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: all 0.3s;
     }
 
     .select-btn:hover {
-      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
     }
 
     .select-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
     }
 
     .selected-badge {
       position: absolute;
       top: 12px;
       right: 12px;
-      background: #48bb78;
-      color: white;
+      background: #00ff00;
+      color: #000;
       padding: 4px 12px;
       border-radius: 20px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
+    /* Custom Model Form */
     .custom-model-form {
-      background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-      border: 2px solid #e9d8fd;
+      background: rgba(30, 30, 30, 0.6);
+      border: 2px solid rgba(255, 0, 0, 0.2);
       border-radius: 12px;
-      padding: 20px;
+      padding: 24px;
     }
 
     .custom-model-form h4 {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
-      color: #553c9a;
-      margin-bottom: 12px;
+      color: #ffffff;
+      margin-bottom: 8px;
     }
 
     .custom-model-form p {
       font-size: 13px;
-      color: #6b46c1;
+      color: #888;
       margin-bottom: 16px;
-      line-height: 1.5;
     }
 
     .custom-input-group {
@@ -382,86 +547,55 @@
 
     .custom-input-group input {
       flex: 1;
-      padding: 10px 14px;
-      border: 1px solid #d6bcfa;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 14px;
+      color: #ffffff;
       font-family: 'Courier New', monospace;
     }
 
     .custom-input-group input:focus {
       outline: none;
-      border-color: #9f7aea;
+      border-color: #ff0000;
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .custom-input-group button {
-      padding: 10px 20px;
-      background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: all 0.3s;
+      white-space: nowrap;
     }
 
     .custom-input-group button:hover {
-      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
     }
 
-    .logout-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 8px 16px;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .logout-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #718096;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #667eea;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
+    /* Preset Tokens */
     .preset-token-card {
-      background: white;
-      border: 2px solid #e2e8f0;
+      background: rgba(30, 30, 30, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 10px;
       padding: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: border-color 0.2s;
+      margin-bottom: 12px;
+      transition: all 0.3s;
     }
 
     .preset-token-card:hover {
-      border-color: #cbd5e0;
+      border-color: rgba(255, 0, 0, 0.3);
+      background: rgba(40, 40, 40, 0.6);
     }
 
     .preset-token-info {
@@ -471,13 +605,13 @@
     .preset-token-name {
       font-size: 15px;
       font-weight: 600;
-      color: #2d3748;
+      color: #ffffff;
       margin-bottom: 4px;
     }
 
     .preset-token-id {
       font-size: 12px;
-      color: #718096;
+      color: #666;
       font-family: 'Courier New', monospace;
     }
 
@@ -490,49 +624,106 @@
     .preset-token-input {
       width: 100px;
       padding: 8px 12px;
-      border: 1px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 6px;
       font-size: 14px;
       font-weight: 600;
+      color: #ffffff;
       text-align: center;
     }
 
     .preset-token-input:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #ff0000;
     }
 
     .preset-token-btn {
       padding: 8px 16px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
       color: white;
       border: none;
       border-radius: 6px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
-      white-space: nowrap;
+      transition: all 0.3s;
     }
 
     .preset-token-btn:hover {
-      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
     }
 
+    .save-all-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 20px;
+    }
+
+    .save-all-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.4);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #ff0000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
+      .sidebar {
+        width: 70px;
+      }
+
+      .sidebar-logo-text,
+      .nav-item span,
+      .sidebar-footer {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 70px;
+        width: calc(100% - 70px);
+      }
+
       .models-grid {
         grid-template-columns: 1fr;
       }
 
-      .header h1 {
-        font-size: 28px;
-      }
-
-      .logout-btn {
-        position: static;
-        margin: 0 auto 20px;
-        display: block;
-        width: fit-content;
+      .top-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
       }
 
       .preset-token-card {
@@ -552,123 +743,164 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>
-        <span class="header-icon">🤖</span>
-        YuGPT Admin Panel
-      </h1>
-      <p>Manage AI model selection for all users</p>
-    </div>
-
-    <!-- Login Card -->
-    <div class="login-card" id="loginCard">
-      <h2>🔐 Admin Login</h2>
+  <!-- Login Screen -->
+  <div class="login-container" id="loginContainer">
+    <div class="login-box">
+      <div class="login-header">
+        <div class="login-icon">🤖</div>
+        <h1 class="login-title">YuGPT Admin</h1>
+        <p class="login-subtitle">Secure Admin Access</p>
+      </div>
       <div id="loginError"></div>
       <form id="loginForm">
         <div class="form-group">
-          <label for="password">Admin Password</label>
-          <input type="password" id="password" placeholder="Enter admin password" required>
+          <label for="password">Enter Password</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn">Login</button>
+        <button type="submit" class="btn-login">Access Admin Panel</button>
       </form>
     </div>
+  </div>
 
-    <!-- Admin Panel -->
-    <div class="admin-panel" id="adminPanel">
-      <button class="logout-btn" onclick="logout()">Logout</button>
-
-      <div id="message"></div>
-
-      <!-- Current Model Display -->
-      <div class="current-model">
-        <h3>Currently Active Model</h3>
-        <div class="current-model-info">
-          <div class="current-model-name" id="currentModelName">Loading...</div>
-          <div class="current-model-badge">ACTIVE</div>
+  <!-- Admin Panel -->
+  <div class="admin-container" id="adminContainer">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-icon">🤖</div>
+          <div class="sidebar-logo-text">
+            <h1>YuGPT</h1>
+            <p>Admin Panel</p>
+          </div>
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p>Loading models...</p>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-section="models">
+          <span class="nav-icon">🎯</span>
+          <span>AI Models</span>
+        </div>
+        <div class="nav-item" data-section="tokens">
+          <span class="nav-icon">📏</span>
+          <span>Max Tokens</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Top Header -->
+      <div class="top-header">
+        <div class="header-title">
+          <h2 id="headerTitle">AI Model Management</h2>
+          <p id="headerSubtitle">Configure AI models for all users</p>
+        </div>
+        <div class="header-actions">
+          <div class="current-model-badge">
+            <span class="badge-label">Active Model:</span>
+            <span class="badge-value" id="currentModelName">Loading...</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Models Container -->
-      <div id="modelsContainer" style="display: none;">
-        <!-- Paid Models -->
-        <div class="model-section">
-          <div class="section-header">
-            <div class="section-icon premium">⭐</div>
-            <div>
-              <div class="section-title">Paid Models</div>
-              <div class="section-subtitle">High quality, affordable pricing</div>
+      <!-- Content Area -->
+      <div class="content-area">
+        <div id="message"></div>
+
+        <!-- AI Models Section -->
+        <div class="content-section active" id="modelsSection">
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading AI models...</p>
+          </div>
+
+          <div id="modelsContainer" style="display: none;">
+            <!-- Premium Models -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-icon">⭐</div>
+                <div class="card-title">
+                  <h3>Premium Models</h3>
+                  <p>High-quality AI models with affordable pricing</p>
+                </div>
+              </div>
+              <div class="models-grid" id="premiumModels"></div>
+            </div>
+
+            <!-- Free Models -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-icon">🆓</div>
+                <div class="card-title">
+                  <h3>Free Models</h3>
+                  <p>Perfect for testing and development</p>
+                </div>
+              </div>
+              <div class="models-grid" id="freeModels"></div>
+            </div>
+
+            <!-- Custom Model -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-icon">🎨</div>
+                <div class="card-title">
+                  <h3>Custom Model</h3>
+                  <p>Use any OpenRouter model ID</p>
+                </div>
+              </div>
+              <div class="custom-model-form">
+                <h4>Enter Custom Model ID</h4>
+                <p>Browse available models at <a href="https://openrouter.ai/models" target="_blank" style="color: #ff0000; font-weight: 600;">openrouter.ai/models</a></p>
+                <div class="custom-input-group">
+                  <input type="text" id="customModelId" placeholder="provider/model-name" />
+                  <button onclick="selectCustomModel()">Apply Model</button>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="models-grid" id="premiumModels"></div>
         </div>
 
-        <!-- Free Models -->
-        <div class="model-section">
-          <div class="section-header">
-            <div class="section-icon free">🆓</div>
-            <div>
-              <div class="section-title">Free Models</div>
-              <div class="section-subtitle">Perfect for testing and development</div>
-            </div>
+        <!-- Max Tokens Section -->
+        <div class="content-section" id="tokensSection">
+          <div class="loading" id="maxTokensLoading">
+            <div class="spinner"></div>
+            <p>Loading max tokens configuration...</p>
           </div>
-          <div class="models-grid" id="freeModels"></div>
-        </div>
 
-        <!-- Custom Model -->
-        <div class="model-section">
-          <div class="section-header">
-            <div class="section-icon custom">🎨</div>
-            <div>
-              <div class="section-title">Custom Model</div>
-              <div class="section-subtitle">Use any OpenRouter model ID</div>
-            </div>
-          </div>
-          <div class="custom-model-form">
-            <h4>Enter Custom Model ID</h4>
-            <p>Find model IDs at <a href="https://openrouter.ai/models" target="_blank" style="color: #6b46c1; font-weight: 600;">openrouter.ai/models</a></p>
-            <div class="custom-input-group">
-              <input type="text" id="customModelId" placeholder="e.g., provider/model-name" />
-              <button onclick="selectCustomModel()">Use Custom Model</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Max Tokens Configuration -->
-        <div class="model-section">
-          <div class="section-header">
-            <div class="section-icon optimized">📏</div>
-            <div>
-              <div class="section-title">Max Tokens Configuration</div>
-              <div class="section-subtitle">Control output length for each preset</div>
-            </div>
-          </div>
-          <div id="maxTokensLoading" class="loading" style="padding: 20px;">
-            <div class="spinner" style="width: 30px; height: 30px;"></div>
-            <p>Loading max tokens config...</p>
-          </div>
           <div id="maxTokensContainer" style="display: none;">
-            <div class="custom-model-form" style="background: linear-gradient(135deg, #f0fff4 0%, #e6ffed 100%); border-color: #c6f6d5;">
-              <h4 style="color: #22543d;">Default Max Tokens</h4>
-              <p style="color: #2f855a; margin-bottom: 12px;">This applies to any preset not configured below (Range: 100-10000)</p>
+            <!-- Default Max Tokens -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-icon">⚙️</div>
+                <div class="card-title">
+                  <h3>Default Max Tokens</h3>
+                  <p>Applied to presets without specific configuration (100-10000)</p>
+                </div>
+              </div>
               <div class="custom-input-group">
-                <input type="number" id="defaultMaxTokens" min="100" max="10000" placeholder="e.g., 4000" style="border-color: #9ae6b4;" />
-                <button onclick="updateDefaultMaxTokens()" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">Update Default</button>
+                <input type="number" id="defaultMaxTokens" min="100" max="10000" placeholder="e.g., 4000" />
+                <button onclick="updateDefaultMaxTokens()">Update Default</button>
               </div>
             </div>
 
-            <div style="margin-top: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h4 style="font-size: 16px; font-weight: 600; color: #2d3748;">Preset-Specific Max Tokens</h4>
-                <button onclick="saveAllMaxTokens()" class="btn" style="width: auto; padding: 8px 20px; font-size: 13px;">💾 Save All Changes</button>
+            <!-- Preset-Specific Tokens -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-icon">📊</div>
+                <div class="card-title">
+                  <h3>Preset-Specific Max Tokens</h3>
+                  <p>Configure max tokens for each preset individually</p>
+                </div>
               </div>
-              <div id="presetsMaxTokensList" style="display: grid; gap: 12px;"></div>
+              <div id="presetsMaxTokensList"></div>
+              <button onclick="saveAllMaxTokens()" class="save-all-btn">💾 Save All Changes</button>
             </div>
           </div>
         </div>
@@ -703,18 +935,18 @@
           localStorage.setItem('yugpt_admin_token', authToken);
           showAdminPanel();
         } else {
-          showError('loginError', 'Invalid password. Please try again.');
+          showError('loginError', 'Invalid password. Access denied.');
           authToken = null;
         }
       } catch (error) {
-        showError('loginError', 'Failed to connect to server.');
+        showError('loginError', 'Connection failed. Check server.');
         authToken = null;
       }
     });
 
     async function showAdminPanel() {
-      document.getElementById('loginCard').style.display = 'none';
-      document.getElementById('adminPanel').classList.add('active');
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('adminContainer').classList.add('active');
       await loadModels();
       await loadMaxTokens();
     }
@@ -742,7 +974,7 @@
 
       } catch (error) {
         console.error('Error loading models:', error);
-        showMessage('Failed to load models. Please refresh the page.', 'error');
+        showMessage('Failed to load models. Refresh page.', 'error');
       }
     }
 
@@ -751,19 +983,15 @@
       container.innerHTML = models.map(model => `
         <div class="model-card ${model.id === currentModel ? 'selected' : ''}" data-model-id="${model.id}">
           ${model.id === currentModel ? '<div class="selected-badge">✓ ACTIVE</div>' : ''}
-          <div class="model-card-header">
-            <div>
-              <div class="model-name">${model.name}</div>
-              <div class="model-provider">${model.provider}</div>
-            </div>
-          </div>
+          <div class="model-name">${model.name}</div>
+          <div class="model-provider">${model.provider}</div>
           <div class="model-description">${model.description}</div>
           <div class="model-specs">
-            <span class="spec-badge context">📊 ${model.contextLength} tokens</span>
-            <span class="spec-badge ${model.pricing === 'FREE' ? 'free' : 'pricing'}">💰 ${model.pricing}</span>
+            <span class="spec-badge">📊 ${model.contextLength}</span>
+            <span class="spec-badge">💰 ${model.pricing}</span>
           </div>
           <button class="select-btn" onclick="selectModel('${model.id}')" ${model.id === currentModel ? 'disabled' : ''}>
-            ${model.id === currentModel ? 'Currently Active' : 'Select Model'}
+            ${model.id === currentModel ? '✓ Active' : 'Select Model'}
           </button>
         </div>
       `).join('');
@@ -784,7 +1012,7 @@
 
         if (!response.ok) throw new Error('Failed to select model');
 
-        showMessage('Model updated successfully! All users will now use this model.', 'success');
+        showMessage('✅ Model updated! All users now use this model.', 'success');
 
         // Reload models to update UI
         setTimeout(() => {
@@ -795,7 +1023,7 @@
 
       } catch (error) {
         console.error('Error selecting model:', error);
-        showMessage('Failed to update model. Please try again.', 'error');
+        showMessage('❌ Failed to update model.', 'error');
       }
     }
 
@@ -803,12 +1031,12 @@
       const modelId = document.getElementById('customModelId').value.trim();
 
       if (!modelId) {
-        showMessage('Please enter a model ID', 'error');
+        showMessage('❌ Enter a model ID', 'error');
         return;
       }
 
       if (!modelId.includes('/')) {
-        showMessage('Invalid format. Model ID should be: provider/model-name', 'error');
+        showMessage('❌ Invalid format. Use: provider/model-name', 'error');
         return;
       }
 
@@ -833,11 +1061,35 @@
     function logout() {
       localStorage.removeItem('yugpt_admin_token');
       authToken = null;
-      document.getElementById('adminPanel').classList.remove('active');
-      document.getElementById('loginCard').style.display = 'block';
+      document.getElementById('adminContainer').classList.remove('active');
+      document.getElementById('loginContainer').style.display = 'flex';
       document.getElementById('password').value = '';
       document.getElementById('loginError').innerHTML = '';
     }
+
+    // Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const section = item.dataset.section;
+
+        // Update nav active state
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // Update content sections
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(section + 'Section').classList.add('active');
+
+        // Update header
+        if (section === 'models') {
+          document.getElementById('headerTitle').textContent = 'AI Model Management';
+          document.getElementById('headerSubtitle').textContent = 'Configure AI models for all users';
+        } else if (section === 'tokens') {
+          document.getElementById('headerTitle').textContent = 'Max Tokens Configuration';
+          document.getElementById('headerSubtitle').textContent = 'Control output length for each preset';
+        }
+      });
+    });
 
     // Max Tokens Management
     async function loadMaxTokens() {
@@ -862,7 +1114,7 @@
 
       } catch (error) {
         console.error('Error loading max tokens:', error);
-        document.getElementById('maxTokensLoading').innerHTML = '<p style="color: #c53030;">Failed to load max tokens configuration</p>';
+        document.getElementById('maxTokensLoading').innerHTML = '<p style="color: #ff4444;">Failed to load configuration</p>';
       }
     }
 
@@ -893,12 +1145,12 @@
       const maxTokens = parseInt(document.getElementById('defaultMaxTokens').value);
 
       if (!maxTokens || maxTokens < 100 || maxTokens > 10000) {
-        showMessage('Default max tokens must be between 100 and 10000', 'error');
+        showMessage('❌ Value must be 100-10000', 'error');
         return;
       }
 
       try {
-        showMessage('Updating default max tokens...', 'info');
+        showMessage('Updating default...', 'info');
 
         const response = await fetch('/api/admin/presets/max-tokens/update-default', {
           method: 'POST',
@@ -909,13 +1161,13 @@
           body: JSON.stringify({ maxTokens })
         });
 
-        if (!response.ok) throw new Error('Failed to update default max tokens');
+        if (!response.ok) throw new Error('Failed to update');
 
-        showMessage(`Default max tokens updated to ${maxTokens}`, 'success');
+        showMessage(`✅ Default updated to ${maxTokens}`, 'success');
 
       } catch (error) {
-        console.error('Error updating default max tokens:', error);
-        showMessage('Failed to update default max tokens', 'error');
+        console.error('Error:', error);
+        showMessage('❌ Update failed', 'error');
       }
     }
 
@@ -924,12 +1176,12 @@
       const maxTokens = parseInt(inputElement.value);
 
       if (!maxTokens || maxTokens < 100 || maxTokens > 10000) {
-        showMessage('Max tokens must be between 100 and 10000', 'error');
+        showMessage('❌ Value must be 100-10000', 'error');
         return;
       }
 
       try {
-        showMessage('Updating preset max tokens...', 'info');
+        showMessage('Updating preset...', 'info');
 
         const response = await fetch('/api/admin/presets/max-tokens/update', {
           method: 'POST',
@@ -940,13 +1192,13 @@
           body: JSON.stringify({ presetId, maxTokens })
         });
 
-        if (!response.ok) throw new Error('Failed to update preset max tokens');
+        if (!response.ok) throw new Error('Failed to update');
 
-        showMessage(`Preset "${presetId}" max tokens updated to ${maxTokens}`, 'success');
+        showMessage(`✅ Preset updated to ${maxTokens}`, 'success');
 
       } catch (error) {
-        console.error('Error updating preset max tokens:', error);
-        showMessage('Failed to update preset max tokens', 'error');
+        console.error('Error:', error);
+        showMessage('❌ Update failed', 'error');
       }
     }
 
@@ -964,7 +1216,7 @@
           const value = parseInt(input.value);
 
           if (!value || value < 100 || value > 10000) {
-            showMessage(`Invalid value for ${presetId}: must be between 100 and 10000`, 'error');
+            showMessage(`❌ Invalid value for ${presetId}`, 'error');
             hasError = true;
             return;
           }
@@ -977,7 +1229,7 @@
         // Also update default if changed
         const defaultMaxTokens = parseInt(document.getElementById('defaultMaxTokens').value);
         if (!defaultMaxTokens || defaultMaxTokens < 100 || defaultMaxTokens > 10000) {
-          showMessage('Default max tokens must be between 100 and 10000', 'error');
+          showMessage('❌ Invalid default value', 'error');
           return;
         }
 
@@ -991,7 +1243,7 @@
           body: JSON.stringify({ presets })
         });
 
-        if (!presetsResponse.ok) throw new Error('Failed to bulk update presets');
+        if (!presetsResponse.ok) throw new Error('Failed to bulk update');
 
         // Update default
         const defaultResponse = await fetch('/api/admin/presets/max-tokens/update-default', {
@@ -1008,8 +1260,8 @@
         showMessage('✅ All changes saved successfully!', 'success');
 
       } catch (error) {
-        console.error('Error saving all changes:', error);
-        showMessage('Failed to save changes. Please try again.', 'error');
+        console.error('Error:', error);
+        showMessage('❌ Failed to save changes', 'error');
       }
     }
   </script>
